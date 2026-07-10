@@ -1,10 +1,18 @@
 //! L0 crypto core — **pure** wrapper over `frost-secp256k1-tr` 3.0.
 //!
-//! Placeholder module seam. Filled by plan **01-02**:
-//! - in-process DKG (`keys::dkg::part1/2/3`) + even-Y normalization (KEY-01/02),
-//! - two-round tweaked signing (`round1::commit`, `round2::sign_with_tweak`,
-//!   `aggregate_with_tweak(.., None)`) (SIGN-02/03),
-//! - the non-serializable `EphemeralNonces` newtype (SIGN-05).
+//! Wired by plan **01-02**:
+//! - the non-serializable [`EphemeralNonces`] newtype ([`nonce`]) (SIGN-05),
+//! - in-process DKG generic over `(t, n)` + even-Y normalization + client-side
+//!   group-key confirmation (`keygen`, added in the same plan) (KEY-01/02/05/06),
+//! - `(key_id, epoch, seat)` tagging newtypes (`types`).
 //!
-//! This module MUST NOT gain chain/transport/filesystem dependencies — it is part
-//! of the small auditable trusted computing base.
+//! Two-round tweaked *aggregation* (the coordinator/session side) lands in
+//! 01-04; the participant-side signing primitive (`EphemeralNonces::sign`) is
+//! here so nonce discipline is enforced from the first line of signing code.
+//!
+//! This module MUST NOT gain chain/transport/filesystem dependencies — it is
+//! part of the small auditable trusted computing base.
+
+pub mod nonce;
+
+pub use nonce::EphemeralNonces;
