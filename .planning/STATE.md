@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 1
-current_phase_name: Crypto Bridge & In-Process Signing
+current_phase: 01
+current_phase_name: crypto-bridge-in-process-signing
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-07-10T07:35:03.794Z"
+last_updated: "2026-07-10T07:53:56.785Z"
 last_activity: 2026-07-10
-last_activity_desc: "Roadmap reordered: prove the whole system LOCALLY first (in-process + in-memory transport stub), real transport LAST. Now 7 phases, 43 v1 requirements mapped"
+last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
   percent: 0
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-10)
 
 **Core value:** A group of 1000 can jointly control one Bitcoin address (any 501 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
-**Current focus:** Phase 1 — Crypto Bridge & In-Process Signing
+**Current focus:** Phase 01 — crypto-bridge-in-process-signing
 
 ## Current Position
 
-Phase: 1 of 7 (Crypto Bridge & In-Process Signing)
-Plan: 0 of 5 in current phase
+Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-10 — Roadmap reordered: prove the whole system LOCALLY first (in-process + in-memory transport stub), real transport LAST. Now 7 phases, 43 v1 requirements mapped
+Last activity: 2026-07-10 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01 P01 | 25 | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent decisions affecting current work:
 - [Revision]: Prove the entire system LOCALLY first, real transport LAST. The `Transport` trait + in-memory stub (introduced Phase 1) let every ceremony phase (3–6) run with zero relay code; Phase 7 swaps in real `FileTransport`/`NostrTransport` behind the same trait and re-runs at scale
 - [Revision]: Local DKG-at-scale compute proof (KEY-06, Phase 3, n=1000 in-process) is separated from the transport-layer relay load test (TRAN-08, Phase 7)
 - [Revision]: SEC-03 narrowed to locally-verifiable adversarial tests (mixed-epoch, nonce-reuse-won't-compile) in hardening (Phase 6); new SEC-05 (malicious-relay DoS, replayed-envelope rejection) lives in the final transport phase (Phase 7)
+- [Phase ?]: [01-01]: Canonical bridge established; x-only from_slice confined to bridge/taproot.rs; even-Y invariant rejects OddY (D-11)
+- [Phase ?]: [01-01]: Public-artifact envelope (D-09) = frost PublicKeyPackage hex in serde_json with key_id + reserved epoch; tsig address --network defaults to bitcoin
+- [Phase ?]: [01-01]: Pinned stack committed (frost-secp256k1-tr 3.0.0, bitcoin 0.32.101); corepc-node feature 28_0; toolchain 1.96.0 / MSRV 1.85
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-10T06:54:03.118Z
+Last session: 2026-07-10T07:53:33.901Z
 Stopped at: Phase 1 context gathered
 Resume file: .planning/phases/01-crypto-bridge-in-process-signing/01-CONTEXT.md
