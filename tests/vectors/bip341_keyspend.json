@@ -1,0 +1,28 @@
+{
+  "description": "BIP341/BIP86 key-path (merkle root = None) known-answer vectors pinning the frost->rust-bitcoin bridge (KEY-03). Externally auditable against the BIPs' own published vectors.",
+  "source": "BIP341 wallet-test-vectors.json, scriptPubKey[0] (scriptTree: null => merkle root None => BIP86 key-only output key Q = P + H_taproot(P).G).",
+  "parity_note": "Even-Y normalization negates the point (x,y)->(x,-y), which preserves the x-coordinate. Therefore an odd-Y-origin key and its even-Y normalization share the same x-only internal key, the same BIP86 output key Q, and the same address. The odd-Y-origin entry reuses the published even-Y address as its independent post-normalization reference (D-10/D-11, Assumption A7).",
+  "vectors": [
+    {
+      "name": "even-Y (BIP341 scriptPubKey[0], scriptTree null)",
+      "parity": "even",
+      "internal_xonly": "d6889cb081036e0faefa3a35157ad71086b123b2b144b649798b494c300a961d",
+      "compressed_sec1": "02d6889cb081036e0faefa3a35157ad71086b123b2b144b649798b494c300a961d",
+      "network": "bitcoin",
+      "merkle_root": null,
+      "expected_tweaked_output_key": "53a1f6e454df1aa2776a2814a721372d6258050de330b3c6d10ee8f4e0dda343",
+      "expected_scriptpubkey": "512053a1f6e454df1aa2776a2814a721372d6258050de330b3c6d10ee8f4e0dda343",
+      "expected_address": "bc1p2wsldez5mud2yam29q22wgfh9439spgduvct83k3pm50fcxa5dps59h4z5"
+    },
+    {
+      "name": "odd-Y-origin (same x-coordinate, 0x03 compressed prefix)",
+      "parity": "odd",
+      "internal_xonly": "d6889cb081036e0faefa3a35157ad71086b123b2b144b649798b494c300a961d",
+      "compressed_sec1": "03d6889cb081036e0faefa3a35157ad71086b123b2b144b649798b494c300a961d",
+      "network": "bitcoin",
+      "merkle_root": null,
+      "expected_reject": "OddY",
+      "expected_address_after_normalize": "bc1p2wsldez5mud2yam29q22wgfh9439spgduvct83k3pm50fcxa5dps59h4z5"
+    }
+  ]
+}
