@@ -59,12 +59,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Before round 2, each participant recomputes the sighash locally from the PSBT and is shown human-readable outputs/amounts/fee, requiring an explicit ack unless `--yes` — no blind signing of a coordinator-supplied hash (SIGN-07)
 **Plans**: 5 plans
 
-Plans:
-- [ ] 01-01: Key bridge (`bridge/taproot.rs`) + byte-level round-trip test against a known-answer vector
-- [ ] 01-02: Crypto core wrapper over `frost-secp256k1-tr` + in-process DKG (501 simulated seats) with client-side key confirmation
-- [ ] 01-03: `ChainBackend` trait + Core/Esplora impls: PSBT parse/finalize, key-spend sighash, broadcast on regtest
-- [ ] 01-04: Signing session — non-serializable nonce type, liveness/round1/round2, display-before-sign gate, aggregate+verify against `Q`
-- [ ] 01-05: `Transport` trait + in-memory/in-process stub impl — the architectural seam every later ceremony phase runs against (no relay code)
+Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
+- [ ] 01-01 [W1]: Pinned Cargo scaffold + clap persona skeleton + canonical bridge (`bridge/taproot.rs`) + BIP341/BIP86 KAT (even-Y AND odd-Y-origin) + `tsig address` (KEY-03, KEY-04)
+- [ ] 01-02 [W2]: Crypto core over `frost-secp256k1-tr` — in-process DKG generic over (t,n), even-Y, client-side confirmation, non-serializable nonce type + trybuild, n=1000 correctness + O(n²) measurement (KEY-01/02/05/06, SIGN-05)
+- [ ] 01-03 [W2]: `ChainBackend` trait + Core RPC + Esplora impls, key-spend sighash helper, auto-spawned regtest fixture (STOR-04)
+- [ ] 01-04 [W3]: Signing session — liveness/round1/round2 over Transport, display-before-sign gate, `aggregate_with_tweak(None)` + verify against `Q`, cheater culprits, confirmed regtest key-spend at 501/1000 (SIGN-01/02/03/04/06/07)
+- [ ] 01-05 [W2]: `Transport` trait + in-memory/in-process stub — the architectural seam every later ceremony phase runs against (no relay code)
 
 ### Phase 2: Persistence & Storage
 **Goal**: Lay down the durable-state foundation the ceremony and transport layers build on — age/scrypt participant storage with nonce-exclusion and epoch tagging, encrypted between-round ceremony checkpointing, and the coordinator SQLite store for roster/transcripts/logs/policy/churn — so no durable state is retrofitted later.
