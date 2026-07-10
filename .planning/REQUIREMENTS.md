@@ -18,13 +18,13 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 
 ### Signing (SIGN)
 
-- [ ] **SIGN-01**: Coordinator can run a signing session from a PSBT (`tsig session sign --psbt <file> [--key active]`), computing the BIP341 key-spend sighash per input (`SighashCache::taproot_key_spend_signature_hash`, default sighash type)
-- [ ] **SIGN-02**: Coordinator selects 501 live participants via liveness poll and runs FROST round 1 (`round1::commit`) collecting `SigningCommitments`
-- [ ] **SIGN-03**: Participants run round 2 (`round2::sign_with_tweak`); coordinator aggregates with the taproot tweak (`aggregate_with_tweak(…, merkle_root: None)`) into a 64-byte BIP340 signature
-- [ ] **SIGN-04**: Coordinator verifies the aggregated BIP340 signature against the output key `Q`, finalizes the PSBT, and prints the raw tx (broadcast is operator-driven or `--broadcast` via the configured node)
+- [x] **SIGN-01**: Coordinator can run a signing session from a PSBT (`tsig session sign --psbt <file> [--key active]`), computing the BIP341 key-spend sighash per input (`SighashCache::taproot_key_spend_signature_hash`, default sighash type)
+- [x] **SIGN-02**: Coordinator selects 501 live participants via liveness poll and runs FROST round 1 (`round1::commit`) collecting `SigningCommitments`
+- [x] **SIGN-03**: Participants run round 2 (`round2::sign_with_tweak`); coordinator aggregates with the taproot tweak (`aggregate_with_tweak(…, merkle_root: None)`) into a 64-byte BIP340 signature
+- [x] **SIGN-04**: Coordinator verifies the aggregated BIP340 signature against the output key `Q`, finalizes the PSBT, and prints the raw tx (broadcast is operator-driven or `--broadcast` via the configured node)
 - [x] **SIGN-05**: Signing nonces live in memory only and are represented by a type that cannot be serialized/persisted; any session restart generates fresh nonces (structural prevention of nonce-reuse key extraction)
-- [ ] **SIGN-06**: Aggregation surfaces the 3.0 cheater-detection culprits list; a participant timeout aborts the session and a new session runs with a replacement subset (commitments are never reused across sessions)
-- [ ] **SIGN-07**: Before signing, each participant recomputes the sighash from the PSBT and is shown human-readable tx outputs/amounts/fee, requiring an explicit ack (unless `--yes`); no blind signing of a coordinator-supplied hash
+- [x] **SIGN-06**: Aggregation surfaces the 3.0 cheater-detection culprits list; a participant timeout aborts the session and a new session runs with a replacement subset (commitments are never reused across sessions)
+- [x] **SIGN-07**: Before signing, each participant recomputes the sighash from the PSBT and is shown human-readable tx outputs/amounts/fee, requiring an explicit ack (unless `--yes`); no blind signing of a coordinator-supplied hash
 
 ### Transport — Nostr (TRAN)
 
@@ -109,13 +109,13 @@ Every v1 requirement maps to exactly one phase. The ordering proves the entire s
 | KEY-03 | Phase 1 | Complete |
 | KEY-04 | Phase 1 | Complete |
 | KEY-05 | Phase 1 | Complete |
-| SIGN-01 | Phase 1 | Pending |
-| SIGN-02 | Phase 1 | Pending |
-| SIGN-03 | Phase 1 | Pending |
-| SIGN-04 | Phase 1 | Pending |
+| SIGN-01 | Phase 1 | Complete |
+| SIGN-02 | Phase 1 | Complete |
+| SIGN-03 | Phase 1 | Complete |
+| SIGN-04 | Phase 1 | Complete |
 | SIGN-05 | Phase 1 | Complete |
-| SIGN-06 | Phase 1 | Pending |
-| SIGN-07 | Phase 1 | Pending |
+| SIGN-06 | Phase 1 | Complete |
+| SIGN-07 | Phase 1 | Complete |
 | STOR-04 | Phase 1 | Complete |
 | STOR-01 | Phase 2 | Pending |
 | STOR-02 | Phase 2 | Pending |
