@@ -10,8 +10,10 @@
 //! opaque bytes so NIP-44 v2 encryption slots in at Phase 7 above the seam.
 
 pub mod envelope;
+pub mod inmemory;
 
 pub use envelope::{Envelope, EnvelopeId, MessageClass, Seat};
+pub use inmemory::InMemoryTransport;
 
 /// A subscription filter: every `Some` field must match; `None` matches any.
 ///
