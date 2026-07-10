@@ -13,6 +13,12 @@
 //! This module MUST NOT gain chain/transport/filesystem dependencies — it is
 //! part of the small auditable trusted computing base.
 
+pub mod keygen;
 pub mod nonce;
+pub mod types;
 
+pub use keygen::{
+    confirm_group_key, run_inprocess_dkg, run_inprocess_dkg_with_rng, KeygenError,
+};
 pub use nonce::EphemeralNonces;
+pub use types::{Epoch, KeyId, SeatId};
