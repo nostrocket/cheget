@@ -1,0 +1,39 @@
+[package]
+name = "tsig"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "501-of-1000 FROST Taproot signing CLI (participant / coordinator / watcher)"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "tsig"
+path = "src/main.rs"
+
+[lib]
+name = "tsig"
+path = "src/lib.rs"
+
+[dependencies]
+# Entire crypto layer: DKG, round1/round2, sign_with_tweak, aggregate_with_tweak,
+# keys::Tweak / keys::EvenY. serialization feature is on by default.
+frost-secp256k1-tr = "3.0.0"
+# Address, PSBT, tx, BIP341 sighash, x-only key types. Do NOT bump to 0.33.x-beta.
+bitcoin = "0.32.101"
+# Chain backends (wired in 01-03). Both target bitcoin ^0.32.
+bitcoincore-rpc = "0.19.0"
+esplora-client = "0.13.0"
+# Memory hygiene for the nonce / ephemeral-secret newtypes (01-04).
+zeroize = { version = "1.9.0", features = ["zeroize_derive"] }
+# CLI persona tree (derive API).
+clap = { version = "4.6.1", features = ["derive"] }
+# Public-artifact envelope (de)serialization; NEVER placed on the nonce type.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+# Compile-fail harness proving the nonce type is non-serializable (SIGN-05, 01-04).
+trybuild = "1"
+# Auto-spawn a throwaway regtest bitcoind in integration tests (D-05, 01-04).
+# "28_0" pins the downloaded Core version; "download" fetches + hash-verifies it.
+corepc-node = { version = "0.12.0", features = ["28_0", "download"] }

@@ -1,0 +1,6 @@
+# Pin the build toolchain for reproducible builds ("1000 people must verify what
+# they run"). The Cargo.toml `rust-version` (1.85) is the MSRV floor; this channel
+# pins the concrete toolchain used to compile and is bumped deliberately.
+[toolchain]
+channel = "1.96.0"
+components = ["rustfmt", "clippy"]
