@@ -6,14 +6,14 @@ current_phase: 01
 current_phase_name: crypto-bridge-in-process-signing
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-07-10T11:46:33.780Z"
+last_updated: "2026-07-10T11:57:23.491Z"
 last_activity: 2026-07-10
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 ## Current Position
 
 Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-07-10 — Phase 01 execution started
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 25 | 3 tasks | 18 files |
 | Phase 01 P02 | 110 | 3 tasks | 10 files |
 | Phase 01 P03 | 40 | 3 tasks | 7 files |
+| Phase 01 P05 | 10 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [01-01]: Canonical bridge established; x-only from_slice confined to bridge/taproot.rs; even-Y invariant rejects OddY (D-11)
 - [Phase ?]: [01-01]: Public-artifact envelope (D-09) = frost PublicKeyPackage hex in serde_json with key_id + reserved epoch; tsig address --network defaults to bitcoin
 - [Phase ?]: [01-01]: Pinned stack committed (frost-secp256k1-tr 3.0.0, bitcoin 0.32.101); corepc-node feature 28_0; toolchain 1.96.0 / MSRV 1.85
+- [Phase 01]: [01-05]: Transport trait seam + in-memory stub (D-08); opaque-bytes Envelope shaped for Nostr event kinds; content-derived FNV-1a EnvelopeId seeds Phase-7 dedup; no nostr-sdk type in the seam
 
 ### Pending Todos
 
@@ -97,6 +99,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-10T11:46:12.038Z
+Last session: 2026-07-10T11:56:47.305Z
 Stopped at: Phase 1 context gathered
 Resume file: .planning/phases/01-crypto-bridge-in-process-signing/01-CONTEXT.md
