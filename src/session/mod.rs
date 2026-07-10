@@ -22,27 +22,30 @@
 //! fresh nonces) must be started — commitments are never reused. There is
 //! deliberately no `resume`/`checkpoint` verb.
 
+pub mod display;
 pub mod liveness;
 
 use std::collections::BTreeMap;
 
 use bitcoin::hashes::Hash;
-use bitcoin::{Network, Psbt, Transaction, TxOut};
+use bitcoin::{Network, Psbt, Transaction, TxOut, Witness};
 use frost_secp256k1_tr as frost;
 use frost::keys::{KeyPackage, PublicKeyPackage};
 use frost::round1::SigningCommitments;
-use frost::{Identifier, SigningPackage};
+use frost::round2::SignatureShare;
+use frost::{Identifier, Signature, SigningPackage};
 
 use crate::chain::{key_spend_sighash, ChainError};
+use crate::crypto::sign::{aggregate, signature_bytes, verify_against_q, AggregateError};
 use crate::crypto::EphemeralNonces;
 use crate::transport::{Envelope, Filter, MessageClass, Seat, Transport};
 
+use display::{display_and_ack, DisplayError, SpendSummary};
 use liveness::{poll_and_select, LivenessError};
 
 /// The coordinator's transport seat. Seat `0` is never a valid FROST identifier
 /// (identifiers are the roster indices `1..=n`), so it cannot collide with a
 /// signer seat — directed round-2 shares are addressed here.
-#[allow(dead_code)]
 const COORDINATOR_SEAT: Seat = Seat(0);
 
 /// Errors surfaced by the signing session.
@@ -50,6 +53,10 @@ const COORDINATOR_SEAT: Seat = Seat(0);
 pub enum SessionError {
     /// The liveness poll could not finalize a `t`-subset.
     Liveness(LivenessError),
+    /// The display-before-sign gate refused (blind-sign mismatch or missing ack).
+    Display(DisplayError),
+    /// Aggregation / verify-against-`Q` failed (carries cheater culprits, SIGN-06).
+    Aggregate(AggregateError),
     /// A chain-layer error (sighash computation).
     Chain(ChainError),
     /// A `frost` primitive error.
@@ -71,6 +78,8 @@ impl std::fmt::Display for SessionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SessionError::Liveness(e) => write!(f, "liveness: {e}"),
+            SessionError::Display(e) => write!(f, "display-before-sign gate: {e}"),
+            SessionError::Aggregate(e) => write!(f, "aggregation: {e}"),
             SessionError::Chain(e) => write!(f, "chain: {e}"),
             SessionError::Frost(e) => write!(f, "frost: {e}"),
             SessionError::NoWitnessUtxo { input_index } => {
@@ -223,7 +232,7 @@ impl<'a, T: Transport> SigningSession<'a, T> {
     /// `t`. In-process every seat responds, so the pool is over-provisioned by
     /// construction (`n > t`); the *selection* still takes only `t`.
     pub fn liveness_select(&self) -> Result<Vec<Identifier>, SessionError> {
-        for (seat, _id) in &self.id_of_seat {
+        for seat in self.id_of_seat.keys() {
             let env = Envelope::broadcast(
                 MessageClass::SessionControl,
                 &self.id,
@@ -302,5 +311,132 @@ impl<'a, T: Transport> SigningSession<'a, T> {
 
         let signing_package = SigningPackage::new(commitments, sighash.as_byte_array());
         Ok(Round1 { signing_package, nonces })
+    }
+
+    /// The group public-key package (public data only).
+    pub fn group(&self) -> &PublicKeyPackage {
+        &self.group
+    }
+
+    /// Round 2: consume the round-1 nonces, run the display-before-sign gate for
+    /// each seat, produce tweaked signature shares, collect them over the
+    /// transport, aggregate with the Taproot tweak, and verify the result against
+    /// the output key `Q` (SIGN-03, SIGN-04, SIGN-06, SIGN-07).
+    ///
+    /// `r1` is consumed **by value** so its [`EphemeralNonces`] are dropped the
+    /// moment their shares are produced — a nonce can never be signed with twice.
+    pub fn round2(
+        &self,
+        input_index: usize,
+        r1: Round1,
+        yes: bool,
+    ) -> Result<Signature, SessionError> {
+        let Round1 { signing_package, nonces } = r1;
+        let topic = self.topic(input_index);
+        let prevouts = self.prevouts()?;
+        let tx = self.psbt.unsigned_tx.clone();
+
+        for (id, nonce) in nonces {
+            let kp = self.key_packages.get(&id).ok_or(SessionError::UnknownSeat(id))?;
+            let seat = *self.seat_of_id.get(&id).ok_or(SessionError::UnknownSeat(id))?;
+
+            // SIGN-07: each seat recomputes the sighash from the PSBT and refuses
+            // to sign if it disagrees with the coordinator's signing package.
+            display_and_ack(
+                &tx,
+                &prevouts,
+                input_index,
+                signing_package.message(),
+                yes,
+                self.network,
+            )
+            .map_err(SessionError::Display)?;
+
+            // Consume the nonce (moved into `sign`) → tweaked signature share.
+            let share = nonce.sign(&signing_package, kp).map_err(SessionError::Frost)?;
+            self.transport.publish(Envelope::directed(
+                MessageClass::SignatureShare,
+                &topic,
+                2,
+                seat,
+                COORDINATOR_SEAT,
+                share.serialize(),
+            ));
+        }
+
+        // The coordinator collects the shares from the transport (directed to it).
+        let collected = self.transport.subscribe(
+            &Filter::all()
+                .class(MessageClass::SignatureShare)
+                .ceremony(&topic)
+                .round(2)
+                .recipient(COORDINATOR_SEAT),
+        );
+        let mut shares: BTreeMap<Identifier, SignatureShare> = BTreeMap::new();
+        for env in collected {
+            if let Some(id) = self.id_of_seat.get(&env.seat) {
+                let share =
+                    SignatureShare::deserialize(&env.payload).map_err(SessionError::Frost)?;
+                shares.insert(*id, share);
+            }
+        }
+
+        // Tweaked aggregation (merkle_root = None) + verify against Q, never P.
+        let sig = aggregate(&signing_package, &shares, &self.group)
+            .map_err(SessionError::Aggregate)?;
+        verify_against_q(&sig, signing_package.message(), &self.group)
+            .map_err(SessionError::Aggregate)?;
+        Ok(sig)
+    }
+
+    /// Preview the spend the session would authorize (inputs total, outputs,
+    /// fee), without signing. Used by the CLI to render the display gate before
+    /// prompting for an ack.
+    pub fn preview(&self) -> Result<SpendSummary, SessionError> {
+        let prevouts = self.prevouts()?;
+        Ok(display::summarize(&self.psbt.unsigned_tx, &prevouts, self.network))
+    }
+
+    /// Run the full two-round session across every input of the PSBT and return
+    /// the finalized transaction with each input's key-spend witness attached
+    /// (SIGN-01..07). Consumes the session's ability to run again — the session
+    /// is marked spent so its nonces are never reused (SIGN-06).
+    pub fn run(&mut self, yes: bool) -> Result<Transaction, SessionError> {
+        if self.spent {
+            return Err(SessionError::Spent);
+        }
+        let selected = self.liveness_select()?;
+        let mut tx = self.psbt.unsigned_tx.clone();
+
+        for input_index in 0..tx.input.len() {
+            let r1 = self.round1(input_index, &selected)?;
+            let sig = self.round2(input_index, r1, yes)?;
+            let bytes = signature_bytes(&sig).map_err(SessionError::Aggregate)?;
+            // BIP341 key-path spend: the witness is exactly the 64-byte signature
+            // (SIGHASH_DEFAULT ⇒ no sighash-type byte appended).
+            tx.input[input_index].witness = Witness::from_slice(&[bytes]);
+        }
+
+        self.spent = true;
+        Ok(tx)
+    }
+
+    /// Abort this session and start a **new** one bound to a fresh id.
+    ///
+    /// The new session reuses the roster/PSBT/threshold but generates entirely
+    /// fresh nonces when it runs round 1 — the aborted session's commitments are
+    /// never reused (SIGN-06, Pitfall 1/11). The old session's nonces drop with
+    /// its [`Round1`]. This is the only sanctioned recovery from a timeout: never
+    /// retry the same commitment set.
+    pub fn new_session_on_abort(&self, new_id: impl Into<String>) -> SigningSession<'a, T> {
+        SigningSession::new(
+            new_id,
+            self.transport,
+            self.key_packages.clone(),
+            self.group.clone(),
+            self.psbt.clone(),
+            self.t,
+            self.network,
+        )
     }
 }
