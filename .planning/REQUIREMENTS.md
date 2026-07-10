@@ -14,6 +14,7 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [ ] **KEY-03**: A byte-level round-trip test pins the frost→rust-bitcoin key bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness
 - [ ] **KEY-04**: `tsig address [--key active|standby]` prints the BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across all refresh epochs
 - [ ] **KEY-05**: Each participant confirms the group verifying key to the coordinator after keygen; any mismatch aborts the ceremony
+- [ ] **KEY-06**: DKG generates the full n=1000 share set in-process on a single host with no transport, producing 1000 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test)
 
 ### Signing (SIGN)
 
@@ -29,7 +30,7 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 
 - [ ] **TRAN-01**: `tsig init` generates a dedicated Nostr identity keypair (independent of, and never derived from, FROST material) and prints the npub for out-of-band roster registration
 - [ ] **TRAN-02**: Protocol messages are published as signed Nostr events, one custom kind per message class (`ceremony-open`, `round1-package`, `round2-bundle`, `commitments`, `signature-share`, `confirmation`, `session-control`), tagged for ceremony/session/round/seat binding
-- [ ] **TRAN-03**: Confidential payloads (DKG round-2 shares, dealer share export, enroll/repair deltas) are encrypted with NIP-44 v2 to the recipient npub inside the signed event
+- [ ] **TRAN-03**: Confidential payloads (DKG round-2 shares, enroll/repair deltas) are encrypted with NIP-44 v2 to the recipient npub inside the signed event
 - [ ] **TRAN-04**: Every event is published to all configured relays (≥3 self-hosted); readers merge and dedup by event id; events from npubs outside the pinned roster are discarded client-side (relays never trusted to filter)
 - [ ] **TRAN-05**: The roster is a pinned set of npubs whose hash is committed in every ceremony-open event and verified by all clients
 - [ ] **TRAN-06**: Ceremonies are resumable and idempotent per `(ceremony_id, round, seat)` via event-id dedup; round-2 events are published in paced batches
@@ -69,8 +70,9 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 
 - [ ] **SEC-01**: Library versions are pinned (`Cargo.lock` committed); `cargo audit` and `cargo deny` run in CI with documented allow-lists (duplicate secp256k1, age label)
 - [ ] **SEC-02**: The participant binary has a reproducible build so members can verify what they run
-- [ ] **SEC-03**: Adversarial test suite covers malicious relay (DoS), mixed-epoch shares, replayed envelopes, and nonce-reuse attempts
+- [ ] **SEC-03**: Locally-verifiable adversarial tests: mixed-epoch shares rejected early, and a nonce-reuse attempt that fails to compile / is rejected before any partial signature is emitted (no transport required)
 - [ ] **SEC-04**: External review targets the nonce discipline (§6.5) and the bridge code (§9) specifically
+- [ ] **SEC-05**: Transport-dependent adversarial tests: malicious-relay DoS (any one honest relay suffices) and replayed-envelope rejection via event-id/`(ceremony_id, round, seat)` dedup (validated once real transport exists)
 
 ## v2 Requirements
 
@@ -98,17 +100,59 @@ Explicitly excluded, per SPEC non-goals. Documented to prevent scope creep.
 
 ## Traceability
 
-Populated during roadmap creation.
+Every v1 requirement maps to exactly one phase. The ordering proves the entire system LOCALLY first — Phase 1 introduces the `Transport` trait + an in-memory stub so every ceremony phase (3–6) runs with zero relay code — then Phase 7 (FINAL) swaps in the real `FileTransport`/`NostrTransport` impls behind the same trait and re-runs the flows at scale over relays. The local DKG-at-scale compute proof (KEY-06, Phase 3) is deliberately separated from the transport-layer relay load test (TRAN-08, Phase 7). Locally-verifiable adversarial tests (SEC-03) stay in hardening (Phase 6); transport-dependent adversarial tests (SEC-05) move to the final transport phase (Phase 7).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmapper) | | Pending |
+| KEY-01 | Phase 1 | Pending |
+| KEY-02 | Phase 1 | Pending |
+| KEY-03 | Phase 1 | Pending |
+| KEY-04 | Phase 1 | Pending |
+| KEY-05 | Phase 1 | Pending |
+| SIGN-01 | Phase 1 | Pending |
+| SIGN-02 | Phase 1 | Pending |
+| SIGN-03 | Phase 1 | Pending |
+| SIGN-04 | Phase 1 | Pending |
+| SIGN-05 | Phase 1 | Pending |
+| SIGN-06 | Phase 1 | Pending |
+| SIGN-07 | Phase 1 | Pending |
+| STOR-04 | Phase 1 | Pending |
+| STOR-01 | Phase 2 | Pending |
+| STOR-02 | Phase 2 | Pending |
+| STOR-03 | Phase 2 | Pending |
+| KEY-06 | Phase 3 | Pending |
+| ROT-01 | Phase 4 | Pending |
+| ROT-02 | Phase 4 | Pending |
+| ROT-03 | Phase 4 | Pending |
+| ROT-04 | Phase 4 | Pending |
+| ROT-05 | Phase 4 | Pending |
+| ROT-06 | Phase 4 | Pending |
+| LIFE-01 | Phase 5 | Pending |
+| LIFE-02 | Phase 5 | Pending |
+| LIFE-03 | Phase 5 | Pending |
+| LIFE-04 | Phase 5 | Pending |
+| POL-01 | Phase 5 | Pending |
+| POL-02 | Phase 5 | Pending |
+| POL-03 | Phase 5 | Pending |
+| SEC-01 | Phase 6 | Pending |
+| SEC-02 | Phase 6 | Pending |
+| SEC-03 | Phase 6 | Pending |
+| SEC-04 | Phase 6 | Pending |
+| TRAN-01 | Phase 7 | Pending |
+| TRAN-02 | Phase 7 | Pending |
+| TRAN-03 | Phase 7 | Pending |
+| TRAN-04 | Phase 7 | Pending |
+| TRAN-05 | Phase 7 | Pending |
+| TRAN-06 | Phase 7 | Pending |
+| TRAN-07 | Phase 7 | Pending |
+| TRAN-08 | Phase 7 | Pending |
+| SEC-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 40 ⚠️
+- v1 requirements: 43 total (was 41; added KEY-06 local DKG-at-scale compute proof and SEC-05 transport-dependent adversarial tests)
+- Mapped to phases: 43 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-10*
-*Last updated: 2026-07-10 after initial definition*
+*Last updated: 2026-07-10 after roadmap revision (major reorder to prove the system locally first, real transport last; 7 phases; added KEY-06 and SEC-05; 43 v1 requirements mapped)*
