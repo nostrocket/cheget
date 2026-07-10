@@ -9,12 +9,12 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 
 ### Crypto Bridge & Keygen (KEY)
 
-- [ ] **KEY-01**: Operator can generate a group key via DKG (`dkg::part1/2/3`) producing a `KeyPackage` + `PublicKeyPackage` whose verifying key is the Taproot internal key `P` (DKG is the only keygen path)
-- [ ] **KEY-02**: The same DKG routines run in-process on a single host with all participants simulated and no transport, for fast local testing and to prove the bridge + signing end-to-end (M1 keygen path; no dealer mode)
+- [x] **KEY-01**: Operator can generate a group key via DKG (`dkg::part1/2/3`) producing a `KeyPackage` + `PublicKeyPackage` whose verifying key is the Taproot internal key `P` (DKG is the only keygen path)
+- [x] **KEY-02**: The same DKG routines run in-process on a single host with all participants simulated and no transport, for fast local testing and to prove the bridge + signing end-to-end (M1 keygen path; no dealer mode)
 - [x] **KEY-03**: A byte-level round-trip test pins the frost→rust-bitcoin key bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness
 - [x] **KEY-04**: `tsig address [--key active|standby]` prints the BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across all refresh epochs
-- [ ] **KEY-05**: Each participant confirms the group verifying key to the coordinator after keygen; any mismatch aborts the ceremony
-- [ ] **KEY-06**: DKG generates the full n=1000 share set in-process on a single host with no transport, producing 1000 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test)
+- [x] **KEY-05**: Each participant confirms the group verifying key to the coordinator after keygen; any mismatch aborts the ceremony
+- [x] **KEY-06**: DKG generates the full n=1000 share set in-process on a single host with no transport, producing 1000 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test)
 
 ### Signing (SIGN)
 
@@ -22,7 +22,7 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [ ] **SIGN-02**: Coordinator selects 501 live participants via liveness poll and runs FROST round 1 (`round1::commit`) collecting `SigningCommitments`
 - [ ] **SIGN-03**: Participants run round 2 (`round2::sign_with_tweak`); coordinator aggregates with the taproot tweak (`aggregate_with_tweak(…, merkle_root: None)`) into a 64-byte BIP340 signature
 - [ ] **SIGN-04**: Coordinator verifies the aggregated BIP340 signature against the output key `Q`, finalizes the PSBT, and prints the raw tx (broadcast is operator-driven or `--broadcast` via the configured node)
-- [ ] **SIGN-05**: Signing nonces live in memory only and are represented by a type that cannot be serialized/persisted; any session restart generates fresh nonces (structural prevention of nonce-reuse key extraction)
+- [x] **SIGN-05**: Signing nonces live in memory only and are represented by a type that cannot be serialized/persisted; any session restart generates fresh nonces (structural prevention of nonce-reuse key extraction)
 - [ ] **SIGN-06**: Aggregation surfaces the 3.0 cheater-detection culprits list; a participant timeout aborts the session and a new session runs with a replacement subset (commitments are never reused across sessions)
 - [ ] **SIGN-07**: Before signing, each participant recomputes the sighash from the PSBT and is shown human-readable tx outputs/amounts/fee, requiring an explicit ack (unless `--yes`); no blind signing of a coordinator-supplied hash
 
@@ -104,23 +104,23 @@ Every v1 requirement maps to exactly one phase. The ordering proves the entire s
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| KEY-01 | Phase 1 | Pending |
-| KEY-02 | Phase 1 | Pending |
+| KEY-01 | Phase 1 | Complete |
+| KEY-02 | Phase 1 | Complete |
 | KEY-03 | Phase 1 | Complete |
 | KEY-04 | Phase 1 | Complete |
-| KEY-05 | Phase 1 | Pending |
+| KEY-05 | Phase 1 | Complete |
 | SIGN-01 | Phase 1 | Pending |
 | SIGN-02 | Phase 1 | Pending |
 | SIGN-03 | Phase 1 | Pending |
 | SIGN-04 | Phase 1 | Pending |
-| SIGN-05 | Phase 1 | Pending |
+| SIGN-05 | Phase 1 | Complete |
 | SIGN-06 | Phase 1 | Pending |
 | SIGN-07 | Phase 1 | Pending |
 | STOR-04 | Phase 1 | Pending |
 | STOR-01 | Phase 2 | Pending |
 | STOR-02 | Phase 2 | Pending |
 | STOR-03 | Phase 2 | Pending |
-| KEY-06 | Phase 3 | Pending |
+| KEY-06 | Phase 3 | Complete |
 | ROT-01 | Phase 4 | Pending |
 | ROT-02 | Phase 4 | Pending |
 | ROT-03 | Phase 4 | Pending |
