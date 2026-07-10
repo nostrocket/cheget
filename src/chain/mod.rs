@@ -17,8 +17,12 @@
 //! The BIP341 key-spend sighash helper lives in [`sighash`]; it is the one message a
 //! FROST key-path signature commits to (SIGN-01 support).
 
+pub mod core_rpc;
+pub mod esplora;
 pub mod sighash;
 
+pub use core_rpc::CoreRpcBackend;
+pub use esplora::EsploraBackend;
 pub use sighash::key_spend_sighash;
 
 use bitcoin::{Address, FeeRate, OutPoint, ScriptBuf, Transaction, Txid, XOnlyPublicKey};
