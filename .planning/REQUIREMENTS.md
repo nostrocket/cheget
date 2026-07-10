@@ -64,7 +64,7 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [ ] **STOR-01**: Participant storage (`~/.tsig/`) holds the identity keypair and per-key-per-epoch `KeyPackage`+`PublicKeyPackage` encrypted at rest (age/scrypt) and zeroized in memory after use
 - [ ] **STOR-02**: Ceremony round secrets (DKG parts) are checkpointed encrypted between rounds of the same ceremony; signing nonces are never persisted (the sole exception)
 - [ ] **STOR-03**: Coordinator state is SQLite (rusqlite): roster (identifier ↔ npub ↔ status ↔ join/leave epochs), ceremony transcripts, session logs, policy config, churn ledger
-- [ ] **STOR-04**: Chain access is behind a trait with a Bitcoin Core JSON-RPC backend (`bitcoincore-rpc`, watch-only `tr(<internal-key>)` descriptor import) and an Esplora (`esplora-client`) alternative for UTXO listing, broadcast, and fee estimation
+- [x] **STOR-04**: Chain access is behind a trait with a Bitcoin Core JSON-RPC backend (`bitcoincore-rpc`, watch-only `tr(<internal-key>)` descriptor import) and an Esplora (`esplora-client`) alternative for UTXO listing, broadcast, and fee estimation
 
 ### Verifiability & Hardening (SEC)
 
@@ -116,7 +116,7 @@ Every v1 requirement maps to exactly one phase. The ordering proves the entire s
 | SIGN-05 | Phase 1 | Complete |
 | SIGN-06 | Phase 1 | Pending |
 | SIGN-07 | Phase 1 | Pending |
-| STOR-04 | Phase 1 | Pending |
+| STOR-04 | Phase 1 | Complete |
 | STOR-01 | Phase 2 | Pending |
 | STOR-02 | Phase 2 | Pending |
 | STOR-03 | Phase 2 | Pending |

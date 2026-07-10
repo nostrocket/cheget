@@ -61,13 +61,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Signing nonces are a type that cannot be serialized/persisted (won't compile if attempted); a session restart or timeout mints fresh nonces in a new session and never reuses commitments, with the 3.0 cheater-detection culprits list surfaced on abort (SIGN-05, SIGN-06)
   5. Before round 2, each participant recomputes the sighash locally from the PSBT and is shown human-readable outputs/amounts/fee, requiring an explicit ack unless `--yes` — no blind signing of a coordinator-supplied hash (SIGN-07)
 
-**Plans**: 2/5 plans executed
+**Plans**: 3/5 plans executed
 
 Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
 
 - [x] 01-01 [W1]: Pinned Cargo scaffold + clap persona skeleton + canonical bridge (`bridge/taproot.rs`) + BIP341/BIP86 KAT (even-Y AND odd-Y-origin) + `tsig address` (KEY-03, KEY-04)
 - [x] 01-02 [W2]: Crypto core over `frost-secp256k1-tr` — in-process DKG generic over (t,n), even-Y, client-side confirmation, non-serializable nonce type + trybuild, n=1000 correctness + O(n²) measurement (KEY-01/02/05/06, SIGN-05)
-- [ ] 01-03 [W2]: `ChainBackend` trait + Core RPC + Esplora impls, key-spend sighash helper, auto-spawned regtest fixture (STOR-04)
+- [x] 01-03 [W2]: `ChainBackend` trait + Core RPC + Esplora impls, key-spend sighash helper, auto-spawned regtest fixture (STOR-04)
 - [ ] 01-04 [W3]: Signing session — liveness/round1/round2 over Transport, display-before-sign gate, `aggregate_with_tweak(None)` + verify against `Q`, cheater culprits, confirmed regtest key-spend at 501/1000 (SIGN-01/02/03/04/06/07)
 - [ ] 01-05 [W2]: `Transport` trait + in-memory/in-process stub — the architectural seam every later ceremony phase runs against (no relay code)
 
@@ -87,7 +87,7 @@ Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
 Plans:
 
 - [x] 01-01-PLAN.md
-- [ ] 01-02-PLAN.md
+- [x] 01-02-PLAN.md
 - [ ] 01-03-PLAN.md
 - [ ] 01-04-PLAN.md
 - [ ] 01-05-PLAN.md
@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Crypto Bridge & In-Process Signing | 2/5 | In Progress|  |
+| 1. Crypto Bridge & In-Process Signing | 3/5 | In Progress|  |
 | 2. Persistence & Storage | 0/2 | Not started | - |
 | 3. DKG at Scale — Local | 0/2 | Not started | - |
 | 4. Membership Rotation | 0/4 | Not started | - |
