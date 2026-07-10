@@ -6,4 +6,4 @@
 
 pub mod taproot;
 
-pub use taproot::{address_from_group_key, output_key_q, BridgeError};
+pub use taproot::{address_from_group_key, internal_key_xonly, output_key_q, BridgeError};

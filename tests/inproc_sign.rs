@@ -10,6 +10,8 @@
 //! The n=1000 variant lives in `tests/inproc_sign_1000.rs` (`#[ignore]`,
 //! nightly); adversarial gates live in `tests/sign_adversarial.rs`.
 
+mod common;
+
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -273,4 +275,11 @@ fn round2_abort_starts_new_session_with_fresh_nonces() {
     let cb = r1b.signing_package().signing_commitment(&id);
     assert!(ca.is_some() && cb.is_some());
     assert_ne!(ca, cb, "a new session MUST use fresh nonces, never reuse commitments");
+}
+
+#[test]
+fn inproc_sign_confirmed_regtest_key_spend_small_n() {
+    // The PR gate (D-06): a full 3-of-5 in-process signing session produces a
+    // CONFIRMED regtest key-spend end-to-end (SIGN-04 crown jewel at small n).
+    common::run_confirmed_key_spend(3, 5);
 }

@@ -40,6 +40,17 @@ impl Network {
             Network::Regtest => KnownHrp::Regtest,
         }
     }
+
+    /// Map to rust-bitcoin's [`bitcoin::Network`] (used to decode addresses for
+    /// the display gate).
+    pub fn bitcoin_network(self) -> bitcoin::Network {
+        match self {
+            Network::Bitcoin => bitcoin::Network::Bitcoin,
+            Network::Testnet => bitcoin::Network::Testnet,
+            Network::Signet => bitcoin::Network::Signet,
+            Network::Regtest => bitcoin::Network::Regtest,
+        }
+    }
 }
 
 /// The public-artifact envelope (D-09).

@@ -73,6 +73,23 @@ pub fn address_from_group_key(
     vk: &frost::VerifyingKey,
     hrp: KnownHrp,
 ) -> Result<Address, BridgeError> {
+    let xonly = internal_key_xonly(vk)?;
+    let secp = Secp256k1::verification_only();
+    // merkle_root = None ⇒ BIP86 key-only output Q.
+    Ok(Address::p2tr(&secp, xonly, None::<TapNodeHash>, hrp))
+}
+
+/// Convert a FROST group verifying key (the Taproot **internal** key `P`) into
+/// its rust-bitcoin x-only form.
+///
+/// This is the internal key `P`, the argument to a `tr(<P>)` watch-only
+/// descriptor — NOT the tweaked output key `Q` the address commits to. The
+/// signing session (01-04) uses it to import the watch-only descriptor so the
+/// chain backend can see the group's UTXOs.
+///
+/// Enforces the even-Y parity invariant (D-11) and contains the crate's ONLY
+/// call to [`XOnlyPublicKey::from_slice`].
+pub fn internal_key_xonly(vk: &frost::VerifyingKey) -> Result<XOnlyPublicKey, BridgeError> {
     // D-11: defensive parity assertion — do NOT unconditionally strip the prefix.
     if !vk.has_even_y() {
         return Err(BridgeError::OddY);
@@ -86,10 +103,7 @@ pub fn address_from_group_key(
     }
     debug_assert_eq!(sec1[0], 0x02, "even-Y compressed SEC1 must start with 0x02");
 
-    let xonly = XOnlyPublicKey::from_slice(&sec1[1..]).map_err(BridgeError::Secp)?;
-    let secp = Secp256k1::verification_only();
-    // merkle_root = None ⇒ BIP86 key-only output Q.
-    Ok(Address::p2tr(&secp, xonly, None::<TapNodeHash>, hrp))
+    XOnlyPublicKey::from_slice(&sec1[1..]).map_err(BridgeError::Secp)
 }
 
 /// Derive the tweaked **output** key `Q` from the group public-key package.
