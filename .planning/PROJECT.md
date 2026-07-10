@@ -16,7 +16,7 @@ A group of 1000 can jointly control a single Bitcoin address such that (a) any 5
 
 ### Active
 
-- [ ] Dealer-mode and DKG-mode keygen producing a FROST `PublicKeyPackage` whose verifying key is the Taproot internal key `P`
+- [ ] DKG keygen (the only keygen path) producing a FROST `PublicKeyPackage` whose verifying key is the Taproot internal key `P` — run in-process on a single host for fast local testing, then distributed over Nostr at n=1000
 - [ ] Deterministic frost→rust-bitcoin key bridge (33-byte SEC1 → x-only → `XOnlyPublicKey` → BIP341 P2TR address, merkle root `None`), pinned by a byte-level round-trip test
 - [ ] Two-round FROST signing with taproot tweak (`sign_with_tweak` / `aggregate_with_tweak(…, None)`) producing a standard 64-byte BIP340 signature over the key-spend sighash
 - [ ] Nostr transport: signed events per message class, NIP-44 v2 for confidential payloads, multi-relay publish/dedup, roster pinning, offline `--in/--out` file fallback
@@ -61,8 +61,8 @@ A group of 1000 can jointly control a single Bitcoin address such that (a) any 5
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Roadmap covers all of M1–M5 | User wants the full spec end-to-end: happy path → transport → rotation → lifecycle → hardening | — Pending |
-| DKG-first as primary keygen path | User prefers trustless key generation from day one; dealer mode retained as documented fallback | — Pending |
-| Crypto bridge proven early (in-process, simulated participants) before full n=1000 DKG transport | De-risk the frost↔rust-bitcoin integration bug class without blocking on O(n²) relay work | — Pending |
+| DKG is the only keygen path; dealer mode dropped | User wants trustless key generation with no single-party trust event; local in-process DKG on one host covers fast testing | — Pending |
+| Crypto bridge proven early via in-process DKG (simulated participants, no transport) before full n=1000 DKG transport | De-risk the frost↔rust-bitcoin integration bug class without blocking on O(n²) relay work; M1 keygen is local DKG, not dealer | — Pending |
 | Framed as security-reviewable OSS | 1000 people must verify what they run — reproducible builds, pinned/audited deps, external review of nonce discipline + bridge are first-class | — Pending |
 | `frost-secp256k1-tr` ≥3.0 is the entire crypto layer | Audited (NCC), packaged, provides every primitive needed incl. BIP341 tweak; alternatives are primitives-level or wrong-scheme | — Pending |
 | Nostr as transport (not a bespoke relay) | Event model = the message-board/envelope-signature/delivery semantics ceremonies need; multi-relay = redundant liveness by construction | — Pending |
