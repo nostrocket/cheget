@@ -17,7 +17,7 @@
 - **D-06:** **Tiered CI.** Every PR gates on: bridge known-answer vector test + a **small-n** end-to-end (DKG→sign→confirm on regtest, e.g. 3-of-5) + build/`cargo audit`. The **full `t=51`/`n=100`** end-to-end runs **nightly and on-demand**, and MUST pass before Phase 1 sign-off.
 - **D-07:** The **Core RPC backend fronts the confirmed-key-spend path** (native regtest mining via `generatetoaddress`). The **Esplora backend is still built to the same `ChainBackend` trait** and covered by trait-conformance/unit tests (mocked or public endpoint) — satisfies STOR-04 — but Esplora is **not** in the n=100 confirm path.
 - **D-08:** Ship the **real subcommand skeleton** (clap persona tree) and wire keygen/sign to run against the **in-memory `Transport` stub** in a "simulate all seats in one process" mode. Commands are real entry points; the stub stands in for the network so Phase 7 can swap in Nostr behind the same seam with no call-site churn.
-- **D-09:** **State/key flow without a persistence layer:** public artifacts (`PublicKeyPackage`/group verifying key) written to **plaintext files** (they are public); `tsig address --pubkey <file>` reads one. **Secret share material never touches disk** — lives only in the simulating process for the duration of a run.
+- **D-09:** **State/key flow without a persistence layer:** public artifacts (`PublicKeyPackage`/group verifying key) written to **plaintext files** (they are public); `cheget address --pubkey <file>` reads one. **Secret share material never touches disk** — lives only in the simulating process for the duration of a run.
 - **D-10:** The bridge round-trip test is anchored to the **official BIP341 taproot-tweak / BIP86 key-path published test vectors** (known internal key → known output key → known scriptPubKey/address). Externally auditable against the BIPs.
 - **D-11:** **Parity contract:** the crypto core applies frost's `EvenY` so the group key is always even-Y, and **the bridge asserts this invariant** (rejects/normalizes odd-Y defensively rather than blindly stripping the SEC1 prefix). The KAT suite **covers BOTH an even-Y and an odd-Y-origin vector**, each verified end-to-end.
 
@@ -44,7 +44,7 @@
 | KEY-01 | Generate group key via DKG (`dkg::part1/2/3`) → `KeyPackage`+`PublicKeyPackage`; verifying key is Taproot internal key `P`; DKG-only | DKG signatures verified below (Code Examples §DKG); `into_even_y(None)` normalization for BIP340 (Pattern 2) |
 | KEY-02 | Same DKG routines run in-process, single host, all participants simulated, no transport | In-process simulation loop over a `BTreeMap<Identifier, _>` (Code Examples §DKG, §n=100 loop); runs behind the in-memory `Transport` stub (D-08) |
 | KEY-03 | Byte-level round-trip test pins the frost→rust-bitcoin bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness | Bridge mechanics + KAT sourcing (Pitfall 2, Code Examples §Bridge, Validation Architecture) |
-| KEY-04 | `tsig address [--key active\|standby]` prints BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across refresh epochs | `Address::p2tr(..., None, hrp)` (Standard Stack, Code Examples §Bridge); reads public artifact file (D-09) |
+| KEY-04 | `cheget address [--key active\|standby]` prints BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across refresh epochs | `Address::p2tr(..., None, hrp)` (Standard Stack, Code Examples §Bridge); reads public artifact file (D-09) |
 | KEY-05 | Each participant confirms group verifying key to coordinator after keygen; mismatch aborts | Client-side confirmation over in-memory transport (Pattern 5); trivial in-process at Phase 1, structurally seated for Phase 7 |
 | KEY-06 | Full n=100 share set in-process, 100 `KeyPackage`s verify to one `PublicKeyPackage`; validate O(n²) scales locally | n=100 feasibility + instrumentation (Open Q1, Code Examples §n=100 loop, Performance section) |
 | SIGN-01 | Coordinator runs signing session from PSBT; BIP341 key-spend sighash per input (`taproot_key_spend_signature_hash`, default type) | `ChainBackend` sighash helper (Code Examples §Sighash); `Prevouts::All` (Pitfall 2) |
@@ -59,7 +59,7 @@
 
 ## Summary
 
-Phase 1 builds the trusted computing base of `tsig`: a pure crypto-core wrapper over `frost-secp256k1-tr` 3.0.0, the byte-level frost→rust-bitcoin key bridge, a two-round tweaked signing session, and two architectural trait seams (`Transport`, `ChainBackend`) — all proven end-to-end by a **confirmed regtest key-spend at t=51/n=100**, with zero transport, relays, or encrypted persistence. The entire crypto layer of this project *is* the `frost-secp256k1-tr` public API; there is essentially no bespoke cryptography to write, only correct *wiring* of audited primitives, and correct *conventions* at the one place three convention systems (frost serialization, BIP340 x-only/parity, BIP341 tweak) collide — the bridge.
+Phase 1 builds the trusted computing base of `cheget`: a pure crypto-core wrapper over `frost-secp256k1-tr` 3.0.0, the byte-level frost→rust-bitcoin key bridge, a two-round tweaked signing session, and two architectural trait seams (`Transport`, `ChainBackend`) — all proven end-to-end by a **confirmed regtest key-spend at t=51/n=100**, with zero transport, relays, or encrypted persistence. The entire crypto layer of this project *is* the `frost-secp256k1-tr` public API; there is essentially no bespoke cryptography to write, only correct *wiring* of audited primitives, and correct *conventions* at the one place three convention systems (frost serialization, BIP340 x-only/parity, BIP341 tweak) collide — the bridge.
 
 The dominant risk is not algorithmic but integrational and structural. Two failure classes must be prevented **by construction from the first line of code**, not retrofitted: (1) nonce persistence/reuse (a key-extraction bug class) — prevented by a non-serializable nonce newtype the compiler refuses to persist; and (2) bridge parity/tweak/sighash errors — prevented by a single canonical bridge function pinned to official BIP341/BIP86 known-answer vectors and verified end-to-end against the *output* key `Q` (never the internal key `P`). Two further client-side gates — display-before-sign (recompute sighash from the PSBT) and the same-key check (Phase 4) — encode the "coordinator is untrusted" trust boundary. The four Phase-1 controls map exactly to SIGN-05, KEY-03, SIGN-03/04, and SIGN-07.
 
@@ -169,7 +169,7 @@ Verdicts from `gsd-tools query package-legitimacy check --ecosystem crates …` 
 Phase-1 data flow (in-process; the network is the in-memory `Transport` stub):
 
 ```
-  tsig CLI (clap: keygen | address | session sign)
+  cheget CLI (clap: keygen | address | session sign)
         │
         ▼
   ┌─────────────────────── Orchestration (L3) ───────────────────────┐
@@ -212,7 +212,7 @@ Entry points: the CLI subcommands. Processing stages flow top-to-bottom: simulat
 
 ### Recommended Project Structure
 ```
-tsig/
+cheget/
 ├── Cargo.toml                # Phase-1 pins; commit Cargo.lock
 ├── src/
 │   ├── main.rs               # persona dispatch only
@@ -472,7 +472,7 @@ let sighash = cache.taproot_key_spend_signature_hash(
 ```rust
 // tests/ui/nonce_no_serialize.rs  (must FAIL to compile)
 fn main() {
-    let n: tsig::crypto::EphemeralNonces = unimplemented!();
+    let n: cheget::crypto::EphemeralNonces = unimplemented!();
     let _ = serde_json::to_vec(&n);   // EphemeralNonces: !Serialize  → E0277
 }
 // tests/compile_fail.rs
@@ -537,7 +537,7 @@ client.generate_to_address(101, &addr)?;                    // mature coinbase /
 
 3. **`Transport` trait shape (sync/async, envelope model).** **RESOLVED** — recommendation adopted in **01-05 Task 1** (`src/transport/envelope.rs` `Envelope { class, ceremony/session id, round, seat, recipient: Option<..>, opaque payload: Vec<u8> }` + synchronous `publish`/`subscribe(filter)`; no `nostr-sdk` types leak, D-08). Only the in-memory stub is needed now, but the trait must fit the later Nostr event model (signed envelope, per-message-class kinds, directed vs broadcast, dedup by id). Recommendation: model an `Envelope { class, ceremony/session id, round, seat, recipient: Option<..>, payload: bytes }` and a `publish`/`subscribe(filter)` pair; keep it synchronous for the stub but design the payload as opaque bytes so NIP-44 encryption slots in at Phase 7 without touching orchestration. Do not leak `nostr-sdk` types into the trait.
 
-4. **Public-artifact file format (D-09).** **RESOLVED** — recommendation adopted in **01-01 Task 3** (frost `PublicKeyPackage` canonical bytes wrapped in a small serde_json envelope carrying `key_id` + reserved `epoch`; `tsig address --pubkey <file>` reads it). `PublicKeyPackage` serialized how — frost's default `serialization` (postcard) or `serde_json`? Recommendation: use frost's `serialize()`/`deserialize()` for the canonical bytes wrapped in a small JSON/TOML envelope carrying `key_id` + (future) `epoch`, so `tsig address --pubkey <file>` is stable and human-inspectable. Confirm the frost serialization API shape at implementation.
+4. **Public-artifact file format (D-09).** **RESOLVED** — recommendation adopted in **01-01 Task 3** (frost `PublicKeyPackage` canonical bytes wrapped in a small serde_json envelope carrying `key_id` + reserved `epoch`; `cheget address --pubkey <file>` reads it). `PublicKeyPackage` serialized how — frost's default `serialization` (postcard) or `serde_json`? Recommendation: use frost's `serialize()`/`deserialize()` for the canonical bytes wrapped in a small JSON/TOML envelope carrying `key_id` + (future) `epoch`, so `cheget address --pubkey <file>` is stable and human-inspectable. Confirm the frost serialization API shape at implementation.
 
 ## Environment Availability
 
@@ -568,7 +568,7 @@ Nyquist validation is enabled. Every Phase-1 success criterion has a concrete au
 |--------|----------|-----------|-------------------|-------------|
 | KEY-03 | Bridge byte-level round-trip vs BIP341/BIP86 KAT (even-Y AND odd-Y-origin), assert exact address string | unit (KAT) | `cargo test --test bridge_roundtrip` | ❌ Wave 0 |
 | KEY-01/02 | In-process DKG (small-n) → `KeyPackage`+`PublicKeyPackage`; verifying key = `P` | unit | `cargo test dkg_small` | ❌ Wave 0 |
-| KEY-04 | `tsig address` prints correct P2TR from a `PublicKeyPackage` file | unit + CLI | `cargo test address_from_pubkey` | ❌ Wave 0 |
+| KEY-04 | `cheget address` prints correct P2TR from a `PublicKeyPackage` file | unit + CLI | `cargo test address_from_pubkey` | ❌ Wave 0 |
 | KEY-05 | Every seat's verifying key matches; mismatch aborts | unit | `cargo test keygen_confirm_mismatch_aborts` | ❌ Wave 0 |
 | KEY-06 | 100 `KeyPackage`s all verify to one `PublicKeyPackage` | integration (ignored) | `cargo test --test dkg_100_correctness -- --ignored` | ❌ Wave 0 |
 | KEY-06/D-03 | O(n²) timing + peak-RSS instrumentation across part1/2/3 at n=100 | bench/report | `cargo test --test dkg_100_correctness -- --ignored --nocapture` | ❌ Wave 0 |

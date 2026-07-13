@@ -1,8 +1,8 @@
-# Roadmap: tsig — 51-of-100 FROST Taproot Signing CLI
+# Roadmap: cheget — 51-of-100 FROST Taproot Signing CLI
 
 ## Overview
 
-tsig is built bottom-up as a layered, trait-seamed monolith that proves the entire system
+cheget is built bottom-up as a layered, trait-seamed monolith that proves the entire system
 LOCALLY before any relay code exists, then swaps in real transport as the final step. The
 architecture is trait-seamed: a `Transport` trait (introduced with an in-memory/in-process stub
 in Phase 1) lets every ceremony — DKG, refresh, enroll, repair, sweep — run against an in-memory
@@ -55,7 +55,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: KEY-01, KEY-02, KEY-03, KEY-04, KEY-05, SIGN-01, SIGN-02, SIGN-03, SIGN-04, SIGN-05, SIGN-06, SIGN-07, STOR-04
 **Success Criteria** (what must be TRUE):
 
-  1. `tsig address` prints a BIP341 P2TR address (merkle root `None`) derived from a DKG-generated group key, and a committed byte-level round-trip test pins the frost→rust-bitcoin bridge (33-byte SEC1 → x-only → `XOnlyPublicKey` → P2TR) against a hard-coded known-answer vector (KEY-03, KEY-04)
+  1. `cheget address` prints a BIP341 P2TR address (merkle root `None`) derived from a DKG-generated group key, and a committed byte-level round-trip test pins the frost→rust-bitcoin bridge (33-byte SEC1 → x-only → `XOnlyPublicKey` → P2TR) against a hard-coded known-answer vector (KEY-03, KEY-04)
   2. An in-process ceremony with 51 simulated participants and no transport produces a `KeyPackage`+`PublicKeyPackage` whose verifying key is the Taproot internal key `P`, and every participant confirms the key back — any mismatch aborts the ceremony (KEY-01, KEY-02, KEY-05)
   3. A coordinator signing session over a regtest PSBT computes the per-input key-spend sighash, runs round 1/round 2 with `sign_with_tweak`, aggregates with `aggregate_with_tweak(…, None)` into a 64-byte BIP340 signature that verifies against the output key `Q`, finalizes the PSBT, and broadcasts a confirmed key-spend on regtest (SIGN-01, SIGN-02, SIGN-03, SIGN-04, STOR-04)
   4. Signing nonces are a type that cannot be serialized/persisted (won't compile if attempted); a session restart or timeout mints fresh nonces in a new session and never reuses commitments, with the 3.0 cheater-detection culprits list surfaced on abort (SIGN-05, SIGN-06)
@@ -65,7 +65,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
 
-- [x] 01-01 [W1]: Pinned Cargo scaffold + clap persona skeleton + canonical bridge (`bridge/taproot.rs`) + BIP341/BIP86 KAT (even-Y AND odd-Y-origin) + `tsig address` (KEY-03, KEY-04)
+- [x] 01-01 [W1]: Pinned Cargo scaffold + clap persona skeleton + canonical bridge (`bridge/taproot.rs`) + BIP341/BIP86 KAT (even-Y AND odd-Y-origin) + `cheget address` (KEY-03, KEY-04)
 - [x] 01-02 [W2]: Crypto core over `frost-secp256k1-tr` — in-process DKG generic over (t,n), even-Y, client-side confirmation, non-serializable nonce type + trybuild, n=100 correctness + O(n²) measurement (KEY-01/02/05/06, SIGN-05)
 - [x] 01-03 [W2]: `ChainBackend` trait + Core RPC + Esplora impls, key-spend sighash helper, auto-spawned regtest fixture (STOR-04)
 - [x] 01-04 [W3]: Signing session — liveness/round1/round2 over Transport, display-before-sign gate, `aggregate_with_tweak(None)` + verify against `Q`, cheater culprits, confirmed regtest key-spend at 51/100 (SIGN-01/02/03/04/06/07)
@@ -78,7 +78,7 @@ Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
 **Requirements**: STOR-01, STOR-02, STOR-03
 **Success Criteria** (what must be TRUE):
 
-  1. Participant storage (`~/.tsig/`) holds the identity keypair and per-key-per-epoch `KeyPackage`+`PublicKeyPackage` age/scrypt-encrypted at rest and zeroized in memory after use, tagged `(key_id, epoch, identifier)` (STOR-01)
+  1. Participant storage (`~/.cheget/`) holds the identity keypair and per-key-per-epoch `KeyPackage`+`PublicKeyPackage` age/scrypt-encrypted at rest and zeroized in memory after use, tagged `(key_id, epoch, identifier)` (STOR-01)
   2. Ceremony round secrets (DKG parts) are checkpointed encrypted between rounds of the same ceremony, and signing nonces are structurally excluded from persistence — the sole never-persisted exception (STOR-02)
   3. Coordinator state persists in SQLite (rusqlite): roster (identifier ↔ npub ↔ status ↔ join/leave epochs), ceremony transcripts, session logs, policy config, and churn ledger (STOR-03)
 
@@ -118,11 +118,11 @@ Plans:
 **Depends on**: Phase 3
 **Success Criteria** (what must be TRUE):
 
-  1. `tsig ceremony refresh --remove <ids>` (over the in-memory stub) runs refresh-DKG removing any excluded identifier, increments `epoch`, and every participant verifies client-side that the new `PublicKeyPackage` verifying key equals the pinned old one — aborting and discarding the new share on mismatch, never trusting the coordinator (ROT-01, ROT-02)
-  2. `tsig ceremony enroll --seat <id> --new-member <pubkey>` issues a share to a fresh identifier via repair/RTS and atomically chains an immediate refresh in the same ceremony window so helper delta-knowledge is proactivized away (ROT-03)
-  3. `tsig ceremony repair --seat <id>` recovers a lost share with ≥51 helpers, and the recovering member verifies the result against the group `PublicKeyPackage` (ROT-04)
+  1. `cheget ceremony refresh --remove <ids>` (over the in-memory stub) runs refresh-DKG removing any excluded identifier, increments `epoch`, and every participant verifies client-side that the new `PublicKeyPackage` verifying key equals the pinned old one — aborting and discarding the new share on mismatch, never trusting the coordinator (ROT-01, ROT-02)
+  2. `cheget ceremony enroll --seat <id> --new-member <pubkey>` issues a share to a fresh identifier via repair/RTS and atomically chains an immediate refresh in the same ceremony window so helper delta-knowledge is proactivized away (ROT-03)
+  3. `cheget ceremony repair --seat <id>` recovers a lost share with ≥51 helpers, and the recovering member verifies the result against the group `PublicKeyPackage` (ROT-04)
   4. Signing sessions bind `(key_id, epoch)` and reject mixed-epoch shares early with a clear, seat-identifiable error before any partial reaches aggregation (ROT-05)
-  5. `tsig share status` lists held shares (key_id, epoch, state); at steady state each participant holds exactly two — one ACTIVE, one STANDBY (ROT-06)
+  5. `cheget share status` lists held shares (key_id, epoch, state); at steady state each participant holds exactly two — one ACTIVE, one STANDBY (ROT-06)
 
 **Requirements**: ROT-01, ROT-02, ROT-03, ROT-04, ROT-05, ROT-06
 **Plans**: 4 plans
@@ -141,11 +141,11 @@ Plans:
 **Requirements**: LIFE-01, LIFE-02, LIFE-03, LIFE-04, POL-01, POL-02, POL-03
 **Success Criteria** (what must be TRUE):
 
-  1. `tsig standby new` pre-generates the next (STANDBY) key via a full ceremony over the in-memory stub and keeps it refreshed on the same cadence as ACTIVE (LIFE-01)
-  2. `tsig sweep [--to standby] [--feerate]` builds one RBF-enabled consolidation tx spending ALL active UTXOs to the standby address (via the `ChainBackend` trait) and signs it through the signing session against ACTIVE (LIFE-02)
-  3. On sweep confirmation at depth ≥6 the state machine rolls ACTIVE→RETIRED and STANDBY→ACTIVE, and `tsig watch` nags until a new STANDBY exists (LIFE-03, LIFE-04)
-  4. `tsig policy show|set` manages `value_cap`, `churn_budget` (default 50), `max_epochs` (default 24), and `standby_max_age` (default 90d), and a STANDBY older than `standby_max_age` forces regeneration (POL-01, POL-03)
-  5. `tsig watch --node <rpc-url>` is cron/CI-friendly: exit 0 ok / exit 2 sweep-due, emitting a JSON report when balance > value_cap OR distinct former holders since last DKG > churn_budget OR epochs since DKG > max_epochs (POL-02)
+  1. `cheget standby new` pre-generates the next (STANDBY) key via a full ceremony over the in-memory stub and keeps it refreshed on the same cadence as ACTIVE (LIFE-01)
+  2. `cheget sweep [--to standby] [--feerate]` builds one RBF-enabled consolidation tx spending ALL active UTXOs to the standby address (via the `ChainBackend` trait) and signs it through the signing session against ACTIVE (LIFE-02)
+  3. On sweep confirmation at depth ≥6 the state machine rolls ACTIVE→RETIRED and STANDBY→ACTIVE, and `cheget watch` nags until a new STANDBY exists (LIFE-03, LIFE-04)
+  4. `cheget policy show|set` manages `value_cap`, `churn_budget` (default 50), `max_epochs` (default 24), and `standby_max_age` (default 90d), and a STANDBY older than `standby_max_age` forces regeneration (POL-01, POL-03)
+  5. `cheget watch --node <rpc-url>` is cron/CI-friendly: exit 0 ok / exit 2 sweep-due, emitting a JSON report when balance > value_cap OR distinct former holders since last DKG > churn_budget OR epochs since DKG > max_epochs (POL-02)
 
 **Plans**: 4 plans
 
@@ -183,7 +183,7 @@ Plans:
 **Requirements**: TRAN-01, TRAN-02, TRAN-03, TRAN-04, TRAN-05, TRAN-06, TRAN-07, TRAN-08, SEC-05
 **Success Criteria** (what must be TRUE):
 
-  1. `tsig init` generates a dedicated Nostr identity keypair independently of (and never derived from) FROST material and prints the npub for out-of-band roster registration (TRAN-01)
+  1. `cheget init` generates a dedicated Nostr identity keypair independently of (and never derived from) FROST material and prints the npub for out-of-band roster registration (TRAN-01)
   2. The same ceremonies proven locally now run end-to-end over both `FileTransport` (`--in/--out`) and `NostrTransport` behind the one `Transport` trait, using one signed Nostr event kind per message class tagged for ceremony/session/round/seat binding, with confidential payloads (DKG round-2 shares, enroll/repair deltas) NIP-44 v2 encrypted and public classes in the clear (TRAN-02, TRAN-03, TRAN-07)
   3. Every event is published to all configured relays (≥3), readers merge and dedup by event id, and events from npubs outside the pinned roster (whose hash is committed in every ceremony-open event) are discarded client-side even when a relay delivers them (TRAN-04, TRAN-05)
   4. The gating containerized n=100 DKG completes over self-hosted strfry with paced round-2 batches (~10⁴ events / ~10 MB), and a ceremony interrupted mid-run resumes idempotently per `(ceremony_id, round, seat)` (TRAN-06, TRAN-08)
@@ -193,7 +193,7 @@ Plans:
 
 Plans:
 
-- [ ] 07-01: `tsig init` + Nostr↔FROST key separation, real `Transport` impls behind the trait + message schema (one event kind per class, `(key_id, epoch)` binding), offline `FileTransport` FIRST
+- [ ] 07-01: `cheget init` + Nostr↔FROST key separation, real `Transport` impls behind the trait + message schema (one event kind per class, `(key_id, epoch)` binding), offline `FileTransport` FIRST
 - [ ] 07-02: `NostrTransport` — multi-relay pool, NIP-44 v2 per class, roster pinning + hash commit, NIP-42, dedup
 - [ ] 07-03: Resumable/idempotent ceremonies over real transport — re-run DKG/rotation/lifecycle flows end-to-end over the wire
 - [ ] 07-04: Gating containerized n=100 DKG load test — strfry rate-limit/retention tuning, paced batches, interrupt-and-resume (TRAN-08)

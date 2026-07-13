@@ -1,8 +1,8 @@
-# tsig — 51-of-100 FROST Taproot Signing CLI
+# cheget — 51-of-100 FROST Taproot Signing CLI
 
 ## What This Is
 
-`tsig` is a single-binary Rust command-line tool that lets a fixed-threshold, large-membership group (51-of-100) jointly control one Bitcoin Taproot address using FROST threshold Schnorr signatures (RFC 9591, secp256k1, BIP340/341 key-path spend). On-chain, its spends are indistinguishable from single-sig. Three personae — participant, coordinator, watcher — are selected by subcommand. It supports membership rotation with zero on-chain footprint and true revocation via an on-chain sweep to a pre-generated standby key.
+`cheget` is a single-binary Rust command-line tool that lets a fixed-threshold, large-membership group (51-of-100) jointly control one Bitcoin Taproot address using FROST threshold Schnorr signatures (RFC 9591, secp256k1, BIP340/341 key-path spend). On-chain, its spends are indistinguishable from single-sig. Three personae — participant, coordinator, watcher — are selected by subcommand. It supports membership rotation with zero on-chain footprint and true revocation via an on-chain sweep to a pre-generated standby key.
 
 ## Core Value
 

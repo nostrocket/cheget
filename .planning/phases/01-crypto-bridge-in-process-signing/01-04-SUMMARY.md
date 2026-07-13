@@ -21,7 +21,7 @@ provides:
   - "crypto/sign.rs: aggregate (aggregate_with_tweak None, only exposed path) + verify_against_q + signature_bytes + cheater culprits (SIGN-03/04/06)"
   - "bridge::internal_key_xonly (internal key P x-only for watch-only tr() descriptor import; from_slice stays confined)"
   - "new-session-on-abort semantics (fresh nonces, never reuse commitments, SIGN-06)"
-  - "tsig {coordinator,participant} sign --psbt over the Transport stub"
+  - "cheget {coordinator,participant} sign --psbt over the Transport stub"
   - "small-n confirmed regtest key-spend PR gate + #[ignore] t=51/n=100 nightly + adversarial gates"
 affects: [phase-03-dkg-at-scale, phase-04-rotation, phase-05-sweep-watch, phase-06-hardening, phase-07-transport]
 
@@ -58,7 +58,7 @@ key-decisions:
   - "verify_against_q derives Q via bridge::output_key_q (into_even_y(None).tweak(None)); matches aggregate_with_tweak(.., None) so Q is consistent"
   - "internal_key_xonly extracted from address_from_group_key so watch-only tr() import gets the INTERNAL key P (not output Q), keeping from_slice confined to bridge/taproot.rs (D-11)"
   - "run_confirmed_key_spend(t,n) helper lives in tests/common so the small-n PR gate and the n=100 nightly gate share one pipeline (Rust compiles each test file as a separate crate)"
-  - "n=100 gate is #[ignore] and scale-overridable via TSIG_SIGN_T/TSIG_SIGN_N (default 51/100); the in-process 51/100 DKG is the multi-CPU-hour bottleneck measured in 01-02"
+  - "n=100 gate is #[ignore] and scale-overridable via CHEGET_SIGN_T/CHEGET_SIGN_N (default 51/100); the in-process 51/100 DKG is the multi-CPU-hour bottleneck measured in 01-02"
   - "display_and_ack returns AckRequired when !yes (library boundary); the CLI prompts interactively then runs with the ack given — the blind-sign recompute always runs first, even with --yes"
   - "sign CLI reads raw-consensus-bytes PSBTs only (base64 needs the bitcoin `base64` feature); Phase-1 simulate-all-seats means the PSBT must spend the freshly-generated group address (persisted shares are Phase 2)"
 
@@ -136,9 +136,9 @@ status: complete
 - `src/crypto/sign.rs` — the ONLY aggregation path exposed to app code: `aggregate` (`aggregate_with_tweak(.., None)`, surfacing `Error::culprits()` as `AggregateError::Culprits`, SIGN-06), `verify_against_q` (against `bridge::output_key_q`, never `P`), and `signature_bytes` (64-byte BIP340 witness). The untweaked `frost::aggregate` is never surfaced (Pitfall 7).
 - `src/bridge/taproot.rs` — extracted `internal_key_xonly` (the internal key `P` x-only) so the watch-only `tr()` descriptor import gets `P` (not the output key `Q`), keeping the sole `from_slice` call confined to the bridge (D-11).
 - `tests/inproc_sign.rs` — the small-`n` (3-of-5) PR gate: round-1 gates, round-2 verify-against-`Q`-not-`P`, blind-sign refusal, cheater culprits, abort-fresh-nonces, and the **CONFIRMED regtest key-spend** (`run_confirmed_key_spend(3, 5)`).
-- `tests/inproc_sign_100.rs` — the `#[ignore]` t=51/n=100 nightly gate (D-02/D-06), scale-overridable via `TSIG_SIGN_T`/`TSIG_SIGN_N`; the pipeline was exercised at overridden 3-of-5 scale to prove the nightly path.
+- `tests/inproc_sign_100.rs` — the `#[ignore]` t=51/n=100 nightly gate (D-02/D-06), scale-overridable via `CHEGET_SIGN_T`/`CHEGET_SIGN_N`; the pipeline was exercised at overridden 3-of-5 scale to prove the nightly path.
 - `tests/sign_adversarial.rs` — malicious-coordinator sighash refused even with `--yes`, spent-session run rejected, and post-abort commitments proven fresh.
-- `tsig {coordinator,participant} sign --psbt <file> [--key] [--yes]` drives the session over `InMemoryTransport` (simulate-all-seats, D-08), rendering the display gate and prompting for an ack unless `--yes`.
+- `cheget {coordinator,participant} sign --psbt <file> [--key] [--yes]` drives the session over `InMemoryTransport` (simulate-all-seats, D-08), rendering the display gate and prompting for an ack unless `--yes`.
 
 ## Task Commits
 
@@ -203,7 +203,7 @@ _TDD gate satisfied for Task 2: the `test(…)` RED commit precedes the `feat(�
 - **Issue:** `Psbt::from_str` (base64) is gated behind the bitcoin `base64` feature, which is not in the pinned stack; the initial from_str fallback did not compile.
 - **Fix:** `read_psbt` uses `Psbt::deserialize` (raw consensus bytes) only; documented in the arg help. Base64 interchange can be added with the feature in a later phase if needed.
 - **Files modified:** src/cli/sign.rs
-- **Verification:** `cargo build` exit 0; `tsig coordinator sign --help` renders.
+- **Verification:** `cargo build` exit 0; `cheget coordinator sign --help` renders.
 - **Committed in:** 78c99bd
 
 ---
@@ -224,7 +224,7 @@ cargo test --release --test inproc_sign_100 -- --ignored --nocapture
 
 ## Known Stubs
 
-- The `tsig sign` CLI runs a Phase-1 simulate-all-seats DKG in-process (D-08) because no secret shares are persisted (D-09): the PSBT must spend the group address the command generates. Real signing of an externally-funded PSBT needs persisted shares, which arrive in Phase 2. This does not block the plan goal — the confirmed key-spend is proven by the integration tests, and the CLI wires the identical session over the Transport stub.
+- The `cheget sign` CLI runs a Phase-1 simulate-all-seats DKG in-process (D-08) because no secret shares are persisted (D-09): the PSBT must spend the group address the command generates. Real signing of an externally-funded PSBT needs persisted shares, which arrive in Phase 2. This does not block the plan goal — the confirmed key-spend is proven by the integration tests, and the CLI wires the identical session over the Transport stub.
 
 ## Threat Surface
 

@@ -62,7 +62,7 @@ created: 2026-07-10
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Human-readable display-before-sign rendering | SIGN-07 | Visual UX (rendered outputs/amounts/fee) is asserted structurally in tests, but the human-legibility of the rendering is a manual review | Run `tsig sign` against a regtest PSBT without `--yes`; confirm outputs, amounts, and fee are shown and an explicit ack is required before round 2 |
+| Human-readable display-before-sign rendering | SIGN-07 | Visual UX (rendered outputs/amounts/fee) is asserted structurally in tests, but the human-legibility of the rendering is a manual review | Run `cheget sign` against a regtest PSBT without `--yes`; confirm outputs, amounts, and fee are shown and an explicit ack is required before round 2 |
 | n=100 O(n²) timing/memory measurement | KEY-06 (folded in) | The measurement *is* the deliverable — pass/fail is feasibility judgement, not a fixed threshold | Run nightly n=100 e2e in `--release`; record per-part wall-clock + RSS |
 
 ---

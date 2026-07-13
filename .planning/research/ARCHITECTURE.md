@@ -59,7 +59,7 @@ lowest two layers so the auditable, reproducible surface is small.
 | **Crypto core** (`crypto/`) | The entire cryptographic layer: DKG (part1/2/3), dealer keygen, refresh-DKG, repair/enroll (RTS), round1 commit, round2 `sign_with_tweak`, `aggregate_with_tweak(…,None)`, verify; epoch/identifier tagging on our own newtypes | `frost-secp256k1-tr`, `frost-core` | I/O, network, disk, clock |
 | **Key bridge** (`bridge/`) | `VerifyingKey` (33-byte SEC1) → 32-byte x-only → `bitcoin::XOnlyPublicKey` → `Address::p2tr(…, None, network)`; the Q output-key derivation used for verification | crypto-core types, `rust-bitcoin` | transport, storage |
 | **ChainBackend** (`chain/`) | PSBT parse/finalize, per-input BIP341 key-spend sighash (`SighashCache::taproot_key_spend_signature_hash`), UTXO listing, fee estimate, broadcast, `tr()` watch-only descriptor import — behind one trait | `rust-bitcoin`, `bitcoincore-rpc` \| `esplora-client` | FROST secrets |
-| **ParticipantStore** (`store/participant`) | `~/.tsig/` file store: identity keypair, per-`(key_id,epoch)` `KeyPackage`+`PublicKeyPackage` age/scrypt-encrypted, checkpointed inter-round ceremony state, zeroize on drop | `age`, `zeroize`, `serde` | signing nonces (structurally excluded) |
+| **ParticipantStore** (`store/participant`) | `~/.cheget/` file store: identity keypair, per-`(key_id,epoch)` `KeyPackage`+`PublicKeyPackage` age/scrypt-encrypted, checkpointed inter-round ceremony state, zeroize on drop | `age`, `zeroize`, `serde` | signing nonces (structurally excluded) |
 | **CoordinatorStore** (`store/coordinator`) | SQLite: roster (identifier↔npub↔status↔join/leave epoch), ceremony transcripts (event ids), session logs, policy, churn ledger | `rusqlite` | share secrets |
 | **Transport** (`transport/`) | Message send/recv per message class behind one trait; `NostrTransport` (multi-relay pool, NIP-44 v2, roster pinning, NIP-42 AUTH, dedup by event id) and `FileTransport` (`--in/--out`) | `nostr-sdk`, `serde` | FROST/crypto logic |
 | **Ceremony engine** (`ceremony/`) | Sequences keygen/refresh/enroll/repair rounds; resumable + idempotent per `(ceremony_id, round, seat)`; epoch bookkeeping; same-key postcondition; checkpoints every round *except* nonces | crypto, transport, store | rust-bitcoin |
@@ -75,7 +75,7 @@ Single Cargo binary crate with library-style internal modules (so the crypto/bri
 unit-testable and, ideally, extractable into an audited sub-crate later).
 
 ```
-tsig/
+cheget/
 ├── Cargo.toml              # pinned deps; workspace-lock committed
 ├── src/
 │   ├── main.rs             # persona dispatch only
@@ -373,5 +373,5 @@ the message schema and resumption logic deterministically before the O(n²) rela
 - Known crate APIs (`rust-bitcoin` P2TR/sighash, `nostr-sdk` NIP-44/42), knowledge cutoff Jan 2026. HIGH.
 
 ---
-*Architecture research for: 51-of-100 FROST Taproot signing CLI (tsig)*
+*Architecture research for: 51-of-100 FROST Taproot signing CLI (cheget)*
 *Researched: 2026-07-10*

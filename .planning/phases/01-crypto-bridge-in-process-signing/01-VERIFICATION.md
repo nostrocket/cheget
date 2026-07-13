@@ -27,7 +27,7 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 | --- | ------- | ---------- | -------------- |
-| 1 | `tsig address` prints a BIP341 P2TR address (merkle root `None`) from a DKG-generated group key; a committed byte-level round-trip test pins the frost→rust-bitcoin bridge against a hard-coded KAT (KEY-03, KEY-04) | ✓ VERIFIED | `src/bridge/taproot.rs` is the sole bridge; `cargo test --test bridge_roundtrip` → 3/3 pass (even-Y + odd-Y-origin hard-coded address strings + address-command read-back). CLI spot-check: `watcher address --pubkey` printed `bc1p…w8l6n`. `XOnlyPublicKey::from_slice` confined to `bridge/taproot.rs` (grep confirmed). |
+| 1 | `cheget address` prints a BIP341 P2TR address (merkle root `None`) from a DKG-generated group key; a committed byte-level round-trip test pins the frost→rust-bitcoin bridge against a hard-coded KAT (KEY-03, KEY-04) | ✓ VERIFIED | `src/bridge/taproot.rs` is the sole bridge; `cargo test --test bridge_roundtrip` → 3/3 pass (even-Y + odd-Y-origin hard-coded address strings + address-command read-back). CLI spot-check: `watcher address --pubkey` printed `bc1p…w8l6n`. `XOnlyPublicKey::from_slice` confined to `bridge/taproot.rs` (grep confirmed). |
 | 2 | An in-process ceremony (51 simulated participants, no transport) produces a `KeyPackage`+`PublicKeyPackage` whose verifying key is the internal key `P`, and every participant confirms the key back — mismatch aborts (KEY-01, KEY-02, KEY-05) | ✓ VERIFIED (at proven scale) | `src/crypto/keygen.rs::run_inprocess_dkg` (pure `dkg::part1/2/3`, even-Y normalized, group-key equality check) + `confirm_group_key`. `dkg_small` → 2/2 pass incl. `corrupted_seat_fails_confirmation_and_aborts`. Generic over (t,n); full 51/100 correctness is the `#[ignore]`d nightly gate (human item #2). |
 | 3 | A coordinator signing session over a regtest PSBT computes the per-input key-spend sighash, runs round1/round2 with `sign_with_tweak`, aggregates with `aggregate_with_tweak(…, None)` into a 64-byte BIP340 sig verifying against output key `Q`, finalizes the PSBT, and broadcasts a confirmed regtest key-spend (SIGN-01..04, STOR-04) | ✓ VERIFIED (at proven scale) | `src/session/mod.rs` full two-round orchestration; `crypto/sign.rs` tweaked-only aggregate + `verify_against_q`; `chain/sighash.rs` fixed `Default`/`Prevouts::All`. `inproc_sign` → 7/7 pass incl. `round2_run_signs_and_verifies_against_q_not_p` and `inproc_sign_confirmed_regtest_key_spend_small_n` (broadcasts + confirms on corepc-node regtest). Full 51/100 crown-jewel is `#[ignore]`d nightly (human item #1). |
 | 4 | Signing nonces are a type that cannot be serialized/persisted (won't compile); a restart/timeout mints fresh nonces in a new session, never reusing commitments, with 3.0 cheater-detection culprits surfaced on abort (SIGN-05, SIGN-06) | ✓ VERIFIED | `src/crypto/nonce.rs::EphemeralNonces` (move-only, no Serialize/Clone, `Zeroizing`, consumed by-value in `sign`). trybuild `compile_fail` → `nonce_is_not_serializable` passes (committed `.stderr`). `sign_adversarial` → 3/3 pass: `nonce_reuse_is_rejected…`, `abort_yields_fresh_commitments_never_the_reused_set`; culprits via `AggregateError::Culprits` + `round2_aggregate_surfaces_culprits_on_invalid_share`. |
@@ -68,7 +68,7 @@ All behavior-dependent truths (state transitions / cancellation invariants: KEY-
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
 | Full non-ignored suite | `cargo test` | 34 pass, 0 fail, 2 ignored (documented full-scale gates) | ✓ PASS |
-| CLI persona tree | `tsig --help` | participant/coordinator/watcher listed | ✓ PASS |
+| CLI persona tree | `cheget --help` | participant/coordinator/watcher listed | ✓ PASS |
 | keygen→address round-trip | `coordinator keygen --out … ; watcher address --pubkey …` | valid `bc1p…` P2TR printed | ✓ PASS |
 | No secret material persisted (D-09) | grep envelope for share/secret/KeyPackage | 0 matches | ✓ PASS |
 | Full-scale gates compile (not bit-rotted) | `cargo test --test inproc_sign_100 --test dkg_100_correctness --no-run` | both link | ✓ PASS |
@@ -80,7 +80,7 @@ All behavior-dependent truths (state transitions / cancellation invariants: KEY-
 | KEY-01 | 01-02 | ✓ SATISFIED | `run_inprocess_dkg` → KeyPackage+PublicKeyPackage, verifying key = internal P; `dkg_small`. |
 | KEY-02 | 01-02 | ✓ SATISFIED | Fully in-process, all seats simulated, no transport. |
 | KEY-03 | 01-01 | ✓ SATISFIED | `bridge_roundtrip` KAT (even-Y + odd-Y), hard-coded address strings. |
-| KEY-04 | 01-01 | ✓ SATISFIED | `tsig … address` prints P2TR (CLI spot-check + test). |
+| KEY-04 | 01-01 | ✓ SATISFIED | `cheget … address` prints P2TR (CLI spot-check + test). |
 | KEY-05 | 01-02 | ✓ SATISFIED | `confirm_group_key` + `corrupted_seat_fails_confirmation_and_aborts`. |
 | SIGN-01 | 01-04 | ✓ SATISFIED | Per-input key-spend sighash from PSBT; `round1_builds_signing_package_from_psbt_sighash`. |
 | SIGN-02 | 01-04, 01-05 | ✓ SATISFIED | Liveness poll + `t`-subset select over Transport; `round1_over_provisioned_poll_selects_exactly_t`. |

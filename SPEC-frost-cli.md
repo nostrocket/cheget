@@ -1,4 +1,4 @@
-# SPEC — `tsig`: a 51-of-100 FROST Taproot signing CLI with rotation and sweep
+# SPEC — `cheget`: a 51-of-100 FROST Taproot signing CLI with rotation and sweep
 
 Status: draft v0.1 · 2026-07-09
 Companion research: [implementations-resharing.md](implementations-resharing.md)
@@ -7,7 +7,7 @@ Companion research: [implementations-resharing.md](implementations-resharing.md)
 
 ## 1. Purpose
 
-`tsig` is a command-line tool that lets a fixed-threshold, large-membership group control a
+`cheget` is a command-line tool that lets a fixed-threshold, large-membership group control a
 Bitcoin Taproot address:
 
 - **Scheme:** FROST threshold Schnorr (RFC 9591), secp256k1, BIP340/341 Taproot key-path spend.
@@ -95,43 +95,43 @@ Single binary, three personae selected by subcommand. All ceremony commands are 
 ### Participant commands
 
 ```
-tsig init                                # generate Nostr identity keypair, print npub for
+cheget init                                # generate Nostr identity keypair, print npub for
                                          #   out-of-band roster registration
                                          # (all commands read relay URLs from config or --relays)
-tsig keygen join      --ceremony <id>    # DKG part1/2/3 or receive dealer share
-tsig refresh join     --ceremony <id>    # refresh-DKG rounds for current epoch+1
-tsig enroll help      --ceremony <id>    # act as helper issuing a share to a new seat
-tsig repair help      --ceremony <id>    # help an existing seat recover a lost share
-tsig sign  join       --session  <id>    # round1 commit + round2 sign (prompts to display
+cheget keygen join      --ceremony <id>    # DKG part1/2/3 or receive dealer share
+cheget refresh join     --ceremony <id>    # refresh-DKG rounds for current epoch+1
+cheget enroll help      --ceremony <id>    # act as helper issuing a share to a new seat
+cheget repair help      --ceremony <id>    # help an existing seat recover a lost share
+cheget sign  join       --session  <id>    # round1 commit + round2 sign (prompts to display
                                          #   tx summary: outputs, amounts, fee — human ack
                                          #   required unless --yes)
-tsig share status                        # list held shares: key_id, epoch, state
+cheget share status                        # list held shares: key_id, epoch, state
 ```
 
 ### Coordinator commands
 
 ```
-tsig ceremony keygen  --mode dkg|dealer --seats 100 --threshold 51
-tsig ceremony refresh --remove <ids> [--key active|standby]
-tsig ceremony enroll  --seat <id> --new-member <identity-pubkey>
-tsig ceremony repair  --seat <id>
-tsig session sign     --psbt <file> [--key active]  # select 51 online, run 2 rounds,
+cheget ceremony keygen  --mode dkg|dealer --seats 100 --threshold 51
+cheget ceremony refresh --remove <ids> [--key active|standby]
+cheget ceremony enroll  --seat <id> --new-member <identity-pubkey>
+cheget ceremony repair  --seat <id>
+cheget session sign     --psbt <file> [--key active]  # select 51 online, run 2 rounds,
                                                     #  aggregate, emit finalized tx
-tsig sweep            [--to standby] [--feerate <sat/vb>]  # build+sign consolidation tx
+cheget sweep            [--to standby] [--feerate <sat/vb>]  # build+sign consolidation tx
                                                     #  spending ALL utxos to standby addr;
                                                     #  on confirm: standby→active rollover
-tsig standby new                                    # pre-generate next key (full ceremony)
+cheget standby new                                    # pre-generate next key (full ceremony)
 ```
 
 ### Watcher / policy commands
 
 ```
-tsig address          [--key active|standby]     # print P2TR address
-tsig watch            --node <rpc-url>           # evaluate policy; exit 0 ok / 2 sweep-due
-tsig policy show|set  --value-cap <sats> --churn-budget <count> --max-epochs <count>
+cheget address          [--key active|standby]     # print P2TR address
+cheget watch            --node <rpc-url>           # evaluate policy; exit 0 ok / 2 sweep-due
+cheget policy show|set  --value-cap <sats> --churn-budget <count> --max-epochs <count>
 ```
 
-`tsig watch` is cron/CI-friendly: nonzero exit + JSON report on stdout when
+`cheget watch` is cron/CI-friendly: nonzero exit + JSON report on stdout when
 `balance > value_cap` **or** `distinct former holders since last DKG > churn_budget`
 **or** `epochs since DKG > max_epochs`.
 
@@ -185,9 +185,9 @@ the epoch boundary stays clean. (Batch: enroll k new members, then one refresh.)
    (never reuse commitments across sessions).
 
 ### 6.6 Sweep
-`tsig sweep` = build one consolidation tx: all UTXOs of ACTIVE → single output to STANDBY
+`cheget sweep` = build one consolidation tx: all UTXOs of ACTIVE → single output to STANDBY
 address (RBF-enabled, feerate from arg or node estimate) → run §6.5 against ACTIVE →
-on confirmation depth ≥ 6: ACTIVE→RETIRED, STANDBY→ACTIVE, and `tsig watch` starts nagging
+on confirmation depth ≥ 6: ACTIVE→RETIRED, STANDBY→ACTIVE, and `cheget watch` starts nagging
 until a new STANDBY exists (`standby new`).
 
 ---
@@ -200,7 +200,7 @@ signature-envelope, and delivery semantics the ceremonies need are exactly the N
 model, and multi-relay publication makes the liveness story redundant by construction.
 
 - **Identity:** each participant and the coordinator has a dedicated Nostr keypair
-  (secp256k1/BIP340), generated at `tsig init`. **Key separation is mandatory:** the Nostr
+  (secp256k1/BIP340), generated at `cheget init`. **Key separation is mandatory:** the Nostr
   identity key is generated independently and MUST NOT be derived from, or shared with, any
   FROST share or group-key material. The roster is a pinned set of npubs (hash committed in
   every ceremony-open event), registered with the coordinator out-of-band.
@@ -232,7 +232,7 @@ model, and multi-relay publication makes the liveness story redundant by constru
 
 ## 8. Storage
 
-- **Participant** (`~/.tsig/`): identity keypair; per-key-per-epoch `KeyPackage` +
+- **Participant** (`~/.cheget/`): identity keypair; per-key-per-epoch `KeyPackage` +
   `PublicKeyPackage`, encrypted at rest with a passphrase (age/scrypt), zeroized in memory
   after use (`zeroize`). Checkpointed ceremony state (round secrets for DKG parts are
   written encrypted **only** between rounds of the same ceremony — signing nonces are the

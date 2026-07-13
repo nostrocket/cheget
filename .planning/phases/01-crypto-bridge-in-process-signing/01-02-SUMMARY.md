@@ -12,7 +12,7 @@ provides:
   - "Pure crypto core: in-process FROST DKG generic over (t,n) -> (BTreeMap<Identifier,KeyPackage>, PublicKeyPackage), even-Y normalized (KEY-01/02)"
   - "Client-side group-key confirmation confirm_group_key() with mismatch-abort (KEY-05)"
   - "EphemeralNonces: move-only, non-serializable, Zeroizing signing-nonce newtype; commit()/sign(self) (SIGN-05)"
-  - "tsig keygen (simulate-all-seats, D-08) writing only the public PublicKeyPackage envelope (D-09)"
+  - "cheget keygen (simulate-all-seats, D-08) writing only the public PublicKeyPackage envelope (D-09)"
   - "n=100 correctness proof + O(n^2) timing/RSS instrumentation, #[ignore] (KEY-06, D-03)"
   - "crypto/types.rs: KeyId / Epoch / SeatId tagging newtypes"
 affects: [01-04-signing, 01-05-transport, phase-02-persistence, phase-04-rotation, phase-07-transport]
@@ -45,7 +45,7 @@ key-files:
 key-decisions:
   - "RNG sourced as frost::rand_core::OsRng (frost re-exports rand_core; getrandom already enabled) — no new dependency added"
   - "Corrupted-seat test splices a KeyPackage from an independent ceremony (private fields can't be mutated) to force a real group-key mismatch"
-  - "n=100 test scale overridable via TSIG_DKG_T/TSIG_DKG_N (default 51/100) to capture O(n^2) scaling data points within sandbox limits"
+  - "n=100 test scale overridable via CHEGET_DKG_T/CHEGET_DKG_N (default 51/100) to capture O(n^2) scaling data points within sandbox limits"
   - "Rounds 2/3 parallelized across seats via std::thread::scope (per-seat crypto independent, deterministic); round 1 stays sequential (shared RNG)"
   - "Peak memory reported via a dependency-free `ps -o rss=` probe at the peak-holding point (feasibility figure, D-03), not a kernel high-water mark"
 
@@ -81,7 +81,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D4
-    description: "tsig keygen (simulate-all-seats) writes a public PublicKeyPackage artifact readable by tsig watcher address; no secret share touches disk (KEY-02, D-09)"
+    description: "cheget keygen (simulate-all-seats) writes a public PublicKeyPackage artifact readable by cheget watcher address; no secret share touches disk (KEY-02, D-09)"
     requirement: KEY-02
     verification:
       - kind: e2e
@@ -120,7 +120,7 @@ status: complete
 - `EphemeralNonces` (`src/crypto/nonce.rs`) — the project's single highest-severity structural control: a move-only, `Zeroizing`, **non-`Serialize`/`Deserialize`** wrapper over `round1::SigningNonces`. `commit()` creates it; `sign(self, …)` consumes it by value (routing through `round2::sign_with_tweak(.., None)`), so a nonce is dropped before it can be reused against a second sighash. A `trybuild` `.stderr` snapshot pins the `E0277: EphemeralNonces: Serialize is not satisfied` compile error (SIGN-05).
 - `run_inprocess_dkg(t, n)` (`src/crypto/keygen.rs`) — full `part1/part2/part3` across `n` simulated seats entirely in-process (no transport, KEY-02), both packages normalized to even-Y via `into_even_y(None)` (D-11), group-key agreement enforced across all seats. Returns every seat's `KeyPackage` + the one group `PublicKeyPackage`.
 - `confirm_group_key()` — mandatory client-side gate: any seat whose verifying key disagrees with the group key returns `KeygenError::GroupKeyMismatch` and aborts (KEY-05).
-- `tsig keygen` (`src/cli/keygen.rs`) — simulate-all-seats mode (D-08); default 3-of-5, `--full` gates the real 51/100 (D-02). Writes **only** the public `PublicKeyPackage` envelope (D-09) to `--out`; the produced address round-trips through `tsig watcher address` (verified `bcrt1p…`).
+- `cheget keygen` (`src/cli/keygen.rs`) — simulate-all-seats mode (D-08); default 3-of-5, `--full` gates the real 51/100 (D-02). Writes **only** the public `PublicKeyPackage` envelope (D-09) to `--out`; the produced address round-trips through `cheget watcher address` (verified `bcrt1p…`).
 - `tests/dkg_100_correctness.rs` (`#[ignore]`, KEY-06/D-03) — asserts all `n` KeyPackages verify to one even-Y group key and prints per-part (part1/part2/part3) wall-clock + peak resident set. Rounds 2/3 are parallelized across seats. Measured scaling (all passing): n=150 → 15.6 s, n=300 → 120 s, n=500 → 547 s, with part3 (round-3 share verification) dominating and scaling ~n³ (= n² verifications × O(t) each).
 - `crypto/` remains pure (no chain/transport/filesystem imports — verified).
 
@@ -149,7 +149,7 @@ _TDD gate satisfied for Task 2: `test(…)` RED commit precedes the `feat(…)` 
 
 - **RNG:** used `frost::rand_core::OsRng` (frost re-exports `rand_core`, `getrandom` already enabled) rather than adding a `rand`/`rand_core` dependency — keeps the pinned stack unchanged.
 - **Corrupted-seat simulation:** `KeyPackage` internals are private, so the KEY-05 test splices a `KeyPackage` from an independent ceremony (its verifying key belongs to a different group key) to produce a genuine mismatch, rather than reaching into private fields.
-- **n=100 test scale override (`TSIG_DKG_T`/`TSIG_DKG_N`, default 51/100):** the DKG is generic over (t,n) (D-01), so the same instrumented loop captures scaling data points at smaller sizes that complete within the sandbox — the default remains the mandated 51/100 for the nightly run.
+- **n=100 test scale override (`CHEGET_DKG_T`/`CHEGET_DKG_N`, default 51/100):** the DKG is generic over (t,n) (D-01), so the same instrumented loop captures scaling data points at smaller sizes that complete within the sandbox — the default remains the mandated 51/100 for the nightly run.
 - **Parallelized rounds 2/3** via `std::thread::scope` (per-seat crypto is independent and deterministic; round 1 stays sequential as it consumes the shared RNG). Reported figures are parallel wall-clock.
 - **Peak memory** reported via a dependency-free `ps -o rss=` probe at the peak-holding point — a feasibility figure (D-03), explicitly not a kernel high-water mark.
 
@@ -160,7 +160,7 @@ _TDD gate satisfied for Task 2: `test(…)` RED commit precedes the `feat(…)` 
 **1. [Rule 3 - Blocking] n=100 test scale made overridable + rounds 2/3 parallelized**
 - **Found during:** Task 3
 - **Issue:** The mandated single-threaded 51/100 run is a ~13-CPU-hour job (~50+ min single-core, dominated by round-3 share verification) whose full run exceeds the sandbox's ~60-min background-process lifetime — the buffered result line was never captured. The plan explicitly permits parallelizing the simulation loop and keeping the DKG generic over (t,n).
-- **Fix:** Parallelized part2/part3 across seats with `std::thread::scope` (per-seat crypto independent, deterministic); added `TSIG_DKG_T`/`TSIG_DKG_N` env overrides (default 51/100) so completing scaling measurements could be captured at n=150/300/500.
+- **Fix:** Parallelized part2/part3 across seats with `std::thread::scope` (per-seat crypto independent, deterministic); added `CHEGET_DKG_T`/`CHEGET_DKG_N` env overrides (default 51/100) so completing scaling measurements could be captured at n=150/300/500.
 - **Files modified:** tests/dkg_100_correctness.rs
 - **Verification:** n=150/300/500 runs all `test result: ok` with printed per-part timing + RSS, confirming KEY-06 correctness and the O(n²)≈O(n³) trend.
 - **Committed in:** e009066

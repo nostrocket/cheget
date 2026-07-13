@@ -25,7 +25,7 @@ metrics:
 
 # Quick Task 260713-kgv: Add a README Summary
 
-Added a repo-root `README.md` for `tsig` that gives an accurate, non-overclaiming
+Added a repo-root `README.md` for `cheget` that gives an accurate, non-overclaiming
 orientation — what the project is (a 51-of-100 FROST Taproot signing CLI), what is
 actually implemented today (the Phase 1 in-process crypto core), and what is planned
 but not yet built (transport, persistence, rotation, lifecycle, Nostr).
@@ -59,7 +59,7 @@ Created `README.md` with the eight sections specified in the plan:
 - `test -f README.md` — passes.
 - `grep -q "51-of-100" README.md` — passes.
 - No `501` / `1000` threshold references (stricter grep for `501`/`1000` anywhere) — passes.
-- No `cargo install tsig` / `crates.io` / homebrew claims — passes.
+- No `cargo install cheget` / `crates.io` / homebrew claims — passes.
 - `cargo build` — succeeds (README add did not break the build).
 
 ## Deviations from Plan

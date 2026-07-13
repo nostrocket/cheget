@@ -1,6 +1,6 @@
 # Feature Research
 
-**Domain:** Large-membership (51-of-100) FROST threshold-Schnorr Bitcoin Taproot signing CLI (`tsig`)
+**Domain:** Large-membership (51-of-100) FROST threshold-Schnorr Bitcoin Taproot signing CLI (`cheget`)
 **Researched:** 2026-07-10
 **Confidence:** HIGH (feature set defined by SPEC-frost-cli.md v0.1; comparable-tooling grounding from source-verified `implementations-resharing.md`)
 
@@ -32,11 +32,11 @@ These are non-negotiable. A tool claiming to be a threshold Bitcoin signer that 
 
 ### Differentiators (this design's distinctive bets)
 
-These set `tsig` apart from both conventional Bitcoin multisig and from other FROST tooling. They align directly with the Core Value in PROJECT.md: rotate membership with zero on-chain cost, and make past compromise truly revocable. Most comparable open-source FROST libraries ship *refresh only* or are embedded in a protocol (not a general CLI) — see Competitor Analysis.
+These set `cheget` apart from both conventional Bitcoin multisig and from other FROST tooling. They align directly with the Core Value in PROJECT.md: rotate membership with zero on-chain cost, and make past compromise truly revocable. Most comparable open-source FROST libraries ship *refresh only* or are embedded in a protocol (not a general CLI) — see Competitor Analysis.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Membership rotation, same address** (`ceremony refresh --remove`, `enroll`) | Members join/leave with **zero on-chain footprint** and no address change. Conventional Bitcoin multisig requires an on-chain move (new script → new address) to change signers; `tsig` does not. This is the headline bet. | HIGH | Refresh = ZF `refresh_dkg_part1/part2/refresh_dkg_shares`, drops any identifier not included (removals) and proactivizes (new randomness). O(n²) via relay, same transport as keygen. |
+| **Membership rotation, same address** (`ceremony refresh --remove`, `enroll`) | Members join/leave with **zero on-chain footprint** and no address change. Conventional Bitcoin multisig requires an on-chain move (new script → new address) to change signers; `cheget` does not. This is the headline bet. | HIGH | Refresh = ZF `refresh_dkg_part1/part2/refresh_dkg_shares`, drops any identifier not included (removals) and proactivizes (new randomness). O(n²) via relay, same transport as keygen. |
 | **Same-key postcondition check** (mandatory, client-side, after every refresh) | Guarantees the address never silently changed under a hostile coordinator. The property that makes "same address" *trustworthy*, not just intended. | LOW–MEDIUM | Every participant checks new `PublicKeyPackage` verifying key `==` old; mismatch → abort + discard. Never trust the coordinator's word. Epoch increments only when coordinator has all confirmations. |
 | **Sweep-as-revocation** (`sweep --to standby`) | The **real** revocation mechanism. Rotation only defends against external gradual compromise; retained-share insiders (51 from any one past epoch reconstruct forever) are mitigated *only* by moving funds. Distinctive because the design is explicit that share erasure is NOT the security boundary. | HIGH | One consolidation tx: all ACTIVE UTXOs → single STANDBY output (RBF, feerate arg/estimate) → run signing against ACTIVE → on ≥6 confs: ACTIVE→RETIRED, STANDBY→ACTIVE rollover. |
 | **Standby key lifecycle** (`standby new`; STANDBY state kept refreshed) | Makes a sweep a routine **signing session**, not an emergency ceremony. The next key is pre-generated and rotation-maintained so revocation is fast when needed. | HIGH | Full keygen ceremony for the next key; kept refreshed on the same cadence (its epoch-1 holders are a future dangerous coalition too). At steady state every participant holds exactly two shares (ACTIVE + STANDBY). |
@@ -163,7 +163,7 @@ Maps directly to the SPEC's M1–M5 milestones (PROJECT decision: roadmap covers
 
 Grounded in the source-verified `implementations-resharing.md`. The recurring gap across the field: most libraries ship **proactive refresh (same members)** or are **embedded in a protocol**, not a general-purpose large-membership CLI with sweep-based revocation.
 
-| Feature | ZF frost (`-secp256k1-tr`) | Chainflip / DFINITY chain-key | Frostsnap | Conventional BTC multisig (Sparrow/Nunchuk/Liana) | `tsig` approach |
+| Feature | ZF frost (`-secp256k1-tr`) | Chainflip / DFINITY chain-key | Frostsnap | Conventional BTC multisig (Sparrow/Nunchuk/Liana) | `cheget` approach |
 |---------|---------------------------|-------------------------------|-----------|----------------------------------------------------|-----------------|
 | Scheme | FROST Schnorr BIP340/341 | FROST/IDKG Schnorr+ECDSA | FROST Schnorr | Native `multi()`/`tr()` script | FROST Schnorr, key-path only (uses ZF frost as its entire crypto layer) |
 | Membership rotation, same address | refresh + add/remove + repair/enroll (no `t` change) | full validator-set handover every epoch (protocol-embedded) | add/remove signer, no on-chain move | requires on-chain move (new script → new address) | refresh + enroll/repair, zero on-chain footprint, `t` fixed |
@@ -173,7 +173,7 @@ Grounded in the source-verified `implementations-resharing.md`. The recurring ga
 | Transport | none (library) | protocol P2P | dedicated devices/coordinator | PSBT files / coordinator apps | **Nostr multi-relay** + offline file fallback |
 | Delivery form | crate | embedded in a chain | hardware + app | GUI wallet | single-binary CLI, three personae |
 
-Takeaways for `tsig`: it is essentially "ZF frost's rotation/repair primitives, operationalized at n=100 with a Nostr transport and a sweep-based revocation lifecycle." No existing open-source tool combines large-membership CLI + zero-on-chain rotation + sweep revocation + policy-driven triggers — that combination is the product.
+Takeaways for `cheget`: it is essentially "ZF frost's rotation/repair primitives, operationalized at n=100 with a Nostr transport and a sweep-based revocation lifecycle." No existing open-source tool combines large-membership CLI + zero-on-chain rotation + sweep revocation + policy-driven triggers — that combination is the product.
 
 ## Sources
 
@@ -183,5 +183,5 @@ Takeaways for `tsig`: it is essentially "ZF frost's rotation/repair primitives, 
 - Domain knowledge of conventional Bitcoin multisig UX (Sparrow/Nunchuk/Liana on-chain-move-to-rotate model). **MEDIUM** (not re-verified this run; external search disabled).
 
 ---
-*Feature research for: 51-of-100 FROST Taproot signing CLI (`tsig`)*
+*Feature research for: 51-of-100 FROST Taproot signing CLI (`cheget`)*
 *Researched: 2026-07-10*

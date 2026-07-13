@@ -48,7 +48,7 @@ status: issues_found
 
 ## Summary
 
-This is the crypto-bridge / in-process-signing phase of `tsig`. I reviewed the
+This is the crypto-bridge / in-process-signing phase of `cheget`. I reviewed the
 FROST→rust-bitcoin bridge, the crypto core (DKG, non-serializable nonces,
 tweaked aggregation), the chain backends, the two-round signing session, the
 transport stub, and the CLI, plus the key adversarial/KAT tests. The library and

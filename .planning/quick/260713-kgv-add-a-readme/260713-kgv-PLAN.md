@@ -10,7 +10,7 @@ autonomous: true
 requirements: []
 must_haves:
   truths:
-    - "A README.md exists at the repo root describing tsig accurately"
+    - "A README.md exists at the repo root describing cheget accurately"
     - "The README states the fixed parameters as 51-of-100 (t=51, n=100) everywhere"
     - "Phase 1 capabilities are described as implemented; transport/persistence/rotation/lifecycle are marked planned"
     - "No invented install instructions, crates.io publication, or non-existent features appear"
@@ -21,7 +21,7 @@ must_haves:
 ---
 
 <objective>
-Create a top-level `README.md` at the repo root for `tsig` — the 51-of-100 FROST
+Create a top-level `README.md` at the repo root for `cheget` — the 51-of-100 FROST
 Taproot signing CLI. It does not exist yet.
 
 Purpose: Give a reader an accurate, non-overclaiming orientation: what the project
@@ -83,7 +83,7 @@ These are hard constraints on README content. Violating any is a defect.
   claim any property the code does not yet enforce.
 - **Do NOT invent:** installation instructions beyond what the repo supports
   (`cargo build --release` / `cargo test` are fine; there is NO crates.io release, NO
-  `cargo install tsig`, NO release binaries, NO homebrew). Do not fabricate benchmarks
+  `cargo install cheget`, NO release binaries, NO homebrew). Do not fabricate benchmarks
   beyond those recorded in STATE.md if cited (full 51/100 regtest key-spend ~9.9s, DKG
   group-key proof ~4.4s) — attribute them as measured local timings, optional to include.
 - Reference `SPEC-frost-cli.md` (draft design) and the ROADMAP for the full end-state
@@ -99,7 +99,7 @@ These are hard constraints on README content. Violating any is a defect.
 Create `README.md` at the repo root with these sections, honoring every rule in
 `<accuracy_constraints>` above:
 
-1. Title + one-line description: `tsig` — a single-binary Rust CLI letting a fixed
+1. Title + one-line description: `cheget` — a single-binary Rust CLI letting a fixed
    51-of-100 group jointly control one Bitcoin Taproot address via FROST threshold
    Schnorr signatures (RFC 9591, secp256k1, BIP340/341 key-path spend), on-chain
    indistinguishable from single-sig.
@@ -129,7 +129,7 @@ Create `README.md` at the repo root with these sections, honoring every rule in
 Write plain GitHub-flavored Markdown. Do not edit any file other than README.md.
   </action>
   <verify>
-    <automated>test -f README.md && grep -q "51-of-100" README.md && ! grep -Eq "501-of-1000|501 of 1000|t = 501|t=501|n = 1000|n=1000" README.md && ! grep -Eiq "cargo install tsig|crates\.io|homebrew|brew install" README.md && echo OK</automated>
+    <automated>test -f README.md && grep -q "51-of-100" README.md && ! grep -Eq "501-of-1000|501 of 1000|t = 501|t=501|n = 1000|n=1000" README.md && ! grep -Eiq "cargo install cheget|crates\.io|homebrew|brew install" README.md && echo OK</automated>
   </verify>
   <done>
 README.md exists at repo root; uses 51-of-100 (t=51/n=100) exclusively with no
@@ -148,7 +148,7 @@ invented install/distribution claims; security claims match what the code enforc
 </verification>
 
 <success_criteria>
-A reader lands on the repo, understands what tsig aims to be, sees exactly what is
+A reader lands on the repo, understands what cheget aims to be, sees exactly what is
 implemented today (Phase 1 crypto core, in-process, no transport/persistence) versus
 what is planned, and encounters no false or overclaimed capability.
 </success_criteria>

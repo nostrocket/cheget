@@ -14,7 +14,7 @@ provides:
   - clap three-persona CLI skeleton (participant/coordinator/watcher) with real entry points
   - The ONE canonical frost->rust-bitcoin key bridge (address_from_group_key, output_key_q) with defensive even-Y invariant
   - BIP341/BIP86 known-answer-test harness pinning the bridge to published address strings (even-Y + odd-Y-origin)
-  - Public-artifact envelope format (D-09) and wired `tsig watcher address --pubkey <file>`
+  - Public-artifact envelope format (D-09) and wired `cheget watcher address --pubkey <file>`
 affects: [01-02-keygen, 01-03-chain, 01-04-signing, 01-05-transport, phase-04-rotation]
 
 # Tech tracking
@@ -92,7 +92,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D4
-    description: "tsig watcher address --pubkey <file> reads a public-artifact envelope and prints the BIP341 P2TR address"
+    description: "cheget watcher address --pubkey <file> reads a public-artifact envelope and prints the BIP341 P2TR address"
     requirement: KEY-04
     verification:
       - kind: unit
@@ -108,7 +108,7 @@ status: complete
 
 # Phase 1 Plan 01: Crypto Bridge Scaffold & Canonical Bridge Summary
 
-**Pinned reproducible `tsig` Cargo scaffold with a clap three-persona skeleton and the ONE canonical frost→rust-bitcoin BIP341 key bridge, pinned to the published BIP341/BIP86 address `bc1p2wsldez...` for both an even-Y and an odd-Y-origin key.**
+**Pinned reproducible `cheget` Cargo scaffold with a clap three-persona skeleton and the ONE canonical frost→rust-bitcoin BIP341 key bridge, pinned to the published BIP341/BIP86 address `bc1p2wsldez...` for both an even-Y and an odd-Y-origin key.**
 
 ## Performance
 
@@ -122,7 +122,7 @@ status: complete
 - Greenfield crate compiles against the exact pinned stack (`frost-secp256k1-tr 3.0.0`, `bitcoin 0.32.101`, no 0.33.x) with a committed `Cargo.lock` and `rust-version = "1.85"`.
 - `src/bridge/taproot.rs` provides the single canonical `address_from_group_key` (VerifyingKey `P` → x-only → `XOnlyPublicKey` → `Address::p2tr(.., None, hrp)`) and `output_key_q` (BIP86 tweaked output key `Q` for verification). The x-only `from_slice` constructor is confined to this module.
 - The bridge enforces the D-11 parity invariant: a non-even-Y key returns `BridgeError::OddY` instead of blindly stripping the SEC1 prefix.
-- `tests/bridge_roundtrip.rs` pins the bridge to the hard-coded published BIP341/BIP86 address string for the even-Y vector, proves the odd-Y-origin key is rejected then normalizes to the same address, and proves `tsig address --pubkey <file>` prints that address from a public-artifact envelope.
+- `tests/bridge_roundtrip.rs` pins the bridge to the hard-coded published BIP341/BIP86 address string for the even-Y vector, proves the odd-Y-origin key is rejected then normalizes to the same address, and proves `cheget address --pubkey <file>` prints that address from a public-artifact envelope.
 - clap persona tree (participant/coordinator/watcher) with real entry points; `keygen`/`sign` are explicit stubs (wired in 01-02/01-04), `address` fully wired (KEY-04).
 
 ## Task Commits
@@ -130,7 +130,7 @@ status: complete
 1. **Task 1: Pinned Cargo scaffold + module seams + clap persona skeleton** - `d928740` (feat)
 2. **Task 2: Canonical frost→rust-bitcoin bridge with parity invariant** - `4630635` (feat)
 3. **Task 3 (TDD RED): BIP341/BIP86 KAT + fixture** - `66a9dfe` (test)
-4. **Task 3 (TDD GREEN): public-artifact envelope + wire `tsig address`** - `91b53ff` (feat)
+4. **Task 3 (TDD GREEN): public-artifact envelope + wire `cheget address`** - `91b53ff` (feat)
 
 _TDD gate satisfied: `test(...)` commit precedes the `feat(...)` implementation commit._
 
@@ -195,7 +195,7 @@ All intentional and documented; each names the plan that resolves it:
 - `src/transport/mod.rs` - filled by 01-05 (`Transport` trait + in-memory stub).
 - `src/session/mod.rs` - filled by 01-04 (two-round signing session).
 
-None of these stubs block this plan's goal (KEY-03/KEY-04): the bridge and `tsig address` are fully functional and test-pinned.
+None of these stubs block this plan's goal (KEY-03/KEY-04): the bridge and `cheget address` are fully functional and test-pinned.
 
 ## Next Phase Readiness
 
