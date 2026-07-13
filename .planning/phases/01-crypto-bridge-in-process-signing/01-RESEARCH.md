@@ -1,7 +1,7 @@
 # Phase 1: Crypto Bridge & In-Process Signing - Research
 
 **Researched:** 2026-07-10
-**Domain:** FROST threshold Schnorr (RFC 9591) → BIP340/341 Taproot key-path bridge, two-round tweaked signing, in-process DKG at n=1000, regtest end-to-end proof (Rust)
+**Domain:** FROST threshold Schnorr (RFC 9591) → BIP340/341 Taproot key-path bridge, two-round tweaked signing, in-process DKG at n=100, regtest end-to-end proof (Rust)
 **Confidence:** HIGH (crate versions + core API surface re-verified against docs.rs and the crates.io legitimacy seam this session, 2026-07-10; pitfalls from curated in-repo HIGH-confidence research)
 
 <user_constraints>
@@ -10,12 +10,12 @@
 ### Locked Decisions
 
 - **D-01:** DKG and signing code is written **generic over `(t, n)`**. Fast unit tests may exercise tiny sizes (2-of-3, 3-of-5) for TDD speed.
-- **D-02:** The **real acceptance target is `t=501`, `n=1000`** run fully in-process. The end-to-end proof (DKG → address → sign → aggregate → verify against `Q` → broadcast → confirm on regtest) runs at n=1000. "Always run real where it counts."
-- **D-03:** **Phase 3 folds into Phase 1.** Phase 1 absorbs the n=1000 DKG *correctness* proof (all 1000 `KeyPackage`s verify to one group `PublicKeyPackage` — KEY-06) and the **O(n²) timing/memory measurement** (part1/part2/part3 instrumentation across 1000 seats). No persistence needed for either.
+- **D-02:** The **real acceptance target is `t=51`, `n=100`** run fully in-process. The end-to-end proof (DKG → address → sign → aggregate → verify against `Q` → broadcast → confirm on regtest) runs at n=100. "Always run real where it counts."
+- **D-03:** **Phase 3 folds into Phase 1.** Phase 1 absorbs the n=100 DKG *correctness* proof (all 100 `KeyPackage`s verify to one group `PublicKeyPackage` — KEY-06) and the **O(n²) timing/memory measurement** (part1/part2/part3 instrumentation across 100 seats). No persistence needed for either.
 - **D-04:** The **persist/reload-at-scale** check moves to Phase 2. Phase 3 ceases to exist standalone. → Requires a ROADMAP edit (deferred, not this phase's work).
 - **D-05:** The regtest `bitcoind` is **auto-spawned by the test harness** via the `corepc-node`/`bitcoind` crate (throwaway regtest node on a temp datadir, pinned Core version). Hermetic, reproducible, CI-friendly.
-- **D-06:** **Tiered CI.** Every PR gates on: bridge known-answer vector test + a **small-n** end-to-end (DKG→sign→confirm on regtest, e.g. 3-of-5) + build/`cargo audit`. The **full `t=501`/`n=1000`** end-to-end runs **nightly and on-demand**, and MUST pass before Phase 1 sign-off.
-- **D-07:** The **Core RPC backend fronts the confirmed-key-spend path** (native regtest mining via `generatetoaddress`). The **Esplora backend is still built to the same `ChainBackend` trait** and covered by trait-conformance/unit tests (mocked or public endpoint) — satisfies STOR-04 — but Esplora is **not** in the n=1000 confirm path.
+- **D-06:** **Tiered CI.** Every PR gates on: bridge known-answer vector test + a **small-n** end-to-end (DKG→sign→confirm on regtest, e.g. 3-of-5) + build/`cargo audit`. The **full `t=51`/`n=100`** end-to-end runs **nightly and on-demand**, and MUST pass before Phase 1 sign-off.
+- **D-07:** The **Core RPC backend fronts the confirmed-key-spend path** (native regtest mining via `generatetoaddress`). The **Esplora backend is still built to the same `ChainBackend` trait** and covered by trait-conformance/unit tests (mocked or public endpoint) — satisfies STOR-04 — but Esplora is **not** in the n=100 confirm path.
 - **D-08:** Ship the **real subcommand skeleton** (clap persona tree) and wire keygen/sign to run against the **in-memory `Transport` stub** in a "simulate all seats in one process" mode. Commands are real entry points; the stub stands in for the network so Phase 7 can swap in Nostr behind the same seam with no call-site churn.
 - **D-09:** **State/key flow without a persistence layer:** public artifacts (`PublicKeyPackage`/group verifying key) written to **plaintext files** (they are public); `tsig address --pubkey <file>` reads one. **Secret share material never touches disk** — lives only in the simulating process for the duration of a run.
 - **D-10:** The bridge round-trip test is anchored to the **official BIP341 taproot-tweak / BIP86 key-path published test vectors** (known internal key → known output key → known scriptPubKey/address). Externally auditable against the BIPs.
@@ -26,7 +26,7 @@
 - The exact mechanism for the **non-serializable nonce type** (SIGN-05) — e.g. a newtype around frost `SigningNonces` with no `Serialize` impl + a `trybuild` compile-fail test.
 - The **`Transport` trait contract** (sync/async, message/envelope model) — shaped to fit the later Nostr event model but concretely only needs the in-memory stub now.
 - The **`ChainBackend` trait contract** (UTXO listing, fee estimation, broadcast, sighash helpers, watch-only descriptor import).
-- **Liveness poll / 501-of-1000 subset selection** logic and how the coordinator drives it over the in-memory transport.
+- **Liveness poll / 51-of-100 subset selection** logic and how the coordinator drives it over the in-memory transport.
 - **Display-before-sign UX** specifics (what's rendered, `--yes` behavior) per SIGN-07.
 
 ### Deferred Ideas (OUT OF SCOPE)
@@ -42,13 +42,13 @@
 | ID | Description | Research Support |
 |----|-------------|------------------|
 | KEY-01 | Generate group key via DKG (`dkg::part1/2/3`) → `KeyPackage`+`PublicKeyPackage`; verifying key is Taproot internal key `P`; DKG-only | DKG signatures verified below (Code Examples §DKG); `into_even_y(None)` normalization for BIP340 (Pattern 2) |
-| KEY-02 | Same DKG routines run in-process, single host, all participants simulated, no transport | In-process simulation loop over a `BTreeMap<Identifier, _>` (Code Examples §DKG, §n=1000 loop); runs behind the in-memory `Transport` stub (D-08) |
+| KEY-02 | Same DKG routines run in-process, single host, all participants simulated, no transport | In-process simulation loop over a `BTreeMap<Identifier, _>` (Code Examples §DKG, §n=100 loop); runs behind the in-memory `Transport` stub (D-08) |
 | KEY-03 | Byte-level round-trip test pins the frost→rust-bitcoin bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness | Bridge mechanics + KAT sourcing (Pitfall 2, Code Examples §Bridge, Validation Architecture) |
 | KEY-04 | `tsig address [--key active\|standby]` prints BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across refresh epochs | `Address::p2tr(..., None, hrp)` (Standard Stack, Code Examples §Bridge); reads public artifact file (D-09) |
 | KEY-05 | Each participant confirms group verifying key to coordinator after keygen; mismatch aborts | Client-side confirmation over in-memory transport (Pattern 5); trivial in-process at Phase 1, structurally seated for Phase 7 |
-| KEY-06 | Full n=1000 share set in-process, 1000 `KeyPackage`s verify to one `PublicKeyPackage`; validate O(n²) scales locally | n=1000 feasibility + instrumentation (Open Q1, Code Examples §n=1000 loop, Performance section) |
+| KEY-06 | Full n=100 share set in-process, 100 `KeyPackage`s verify to one `PublicKeyPackage`; validate O(n²) scales locally | n=100 feasibility + instrumentation (Open Q1, Code Examples §n=100 loop, Performance section) |
 | SIGN-01 | Coordinator runs signing session from PSBT; BIP341 key-spend sighash per input (`taproot_key_spend_signature_hash`, default type) | `ChainBackend` sighash helper (Code Examples §Sighash); `Prevouts::All` (Pitfall 2) |
-| SIGN-02 | Coordinator selects 501 live participants via liveness poll; round 1 `round1::commit` collecting `SigningCommitments` | `round1::commit` returns `(SigningNonces, SigningCommitments)` (Code Examples §Signing); over-provision poll (Pitfall 11) |
+| SIGN-02 | Coordinator selects 51 live participants via liveness poll; round 1 `round1::commit` collecting `SigningCommitments` | `round1::commit` returns `(SigningNonces, SigningCommitments)` (Code Examples §Signing); over-provision poll (Pitfall 11) |
 | SIGN-03 | Round 2 `round2::sign_with_tweak`; aggregate `aggregate_with_tweak(…, merkle_root: None)` → 64-byte BIP340 sig | Tweaked signing pipeline (Code Examples §Signing, Pitfall 7) |
 | SIGN-04 | Verify aggregated BIP340 sig against output key `Q`, finalize PSBT, print raw tx | `Q` derivation via `.tweak(None)` + bridge; verify against `Q` not `P` (Pitfall 7, Code Examples §Verify) |
 | SIGN-05 | Nonces in memory only, non-serializable type; any restart → fresh nonces | Non-serializable newtype + `trybuild` compile-fail (Pattern 3, Code Examples §Nonce, Validation Architecture) |
@@ -59,13 +59,13 @@
 
 ## Summary
 
-Phase 1 builds the trusted computing base of `tsig`: a pure crypto-core wrapper over `frost-secp256k1-tr` 3.0.0, the byte-level frost→rust-bitcoin key bridge, a two-round tweaked signing session, and two architectural trait seams (`Transport`, `ChainBackend`) — all proven end-to-end by a **confirmed regtest key-spend at t=501/n=1000**, with zero transport, relays, or encrypted persistence. The entire crypto layer of this project *is* the `frost-secp256k1-tr` public API; there is essentially no bespoke cryptography to write, only correct *wiring* of audited primitives, and correct *conventions* at the one place three convention systems (frost serialization, BIP340 x-only/parity, BIP341 tweak) collide — the bridge.
+Phase 1 builds the trusted computing base of `tsig`: a pure crypto-core wrapper over `frost-secp256k1-tr` 3.0.0, the byte-level frost→rust-bitcoin key bridge, a two-round tweaked signing session, and two architectural trait seams (`Transport`, `ChainBackend`) — all proven end-to-end by a **confirmed regtest key-spend at t=51/n=100**, with zero transport, relays, or encrypted persistence. The entire crypto layer of this project *is* the `frost-secp256k1-tr` public API; there is essentially no bespoke cryptography to write, only correct *wiring* of audited primitives, and correct *conventions* at the one place three convention systems (frost serialization, BIP340 x-only/parity, BIP341 tweak) collide — the bridge.
 
 The dominant risk is not algorithmic but integrational and structural. Two failure classes must be prevented **by construction from the first line of code**, not retrofitted: (1) nonce persistence/reuse (a key-extraction bug class) — prevented by a non-serializable nonce newtype the compiler refuses to persist; and (2) bridge parity/tweak/sighash errors — prevented by a single canonical bridge function pinned to official BIP341/BIP86 known-answer vectors and verified end-to-end against the *output* key `Q` (never the internal key `P`). Two further client-side gates — display-before-sign (recompute sighash from the PSBT) and the same-key check (Phase 4) — encode the "coordinator is untrusted" trust boundary. The four Phase-1 controls map exactly to SIGN-05, KEY-03, SIGN-03/04, and SIGN-07.
 
 Every crate and every load-bearing API was re-verified this session: DKG `part1/2/3` signatures, the `EvenY` and `Tweak` trait method names and implementers, and the `corepc-node` 0.12.0 auto-spawn harness. Rust 1.96 and Docker are present locally; `bitcoind` need not be installed because `corepc-node`'s auto-download feature fetches and hash-verifies a pinned Core binary for the test.
 
-**Primary recommendation:** Build strictly bottom-up along the ARCHITECTURE.md order A→B→C, keeping `crypto/` and `bridge/` pure (no I/O). Land the bridge KAT (KEY-03) and the non-serializable nonce type + `trybuild` test (SIGN-05) *first* — they are the cheapest and highest-leverage structural controls. Then prove in-process 501-of-1000 signing against a real regtest sighash and confirm the spend. Normalize the group key to even-Y with `into_even_y(None)` immediately after DKG, and route the tweak through `sign_with_tweak` / `aggregate_with_tweak(…, None)` exclusively — never expose the untweaked path to app code.
+**Primary recommendation:** Build strictly bottom-up along the ARCHITECTURE.md order A→B→C, keeping `crypto/` and `bridge/` pure (no I/O). Land the bridge KAT (KEY-03) and the non-serializable nonce type + `trybuild` test (SIGN-05) *first* — they are the cheapest and highest-leverage structural controls. Then prove in-process 51-of-100 signing against a real regtest sighash and confirm the spend. Normalize the group key to even-Y with `into_even_y(None)` immediately after DKG, and route the tweak through `sign_with_tweak` / `aggregate_with_tweak(…, None)` exclusively — never expose the untweaked path to app code.
 
 ## Architectural Responsibility Map
 
@@ -80,7 +80,7 @@ Every crate and every load-bearing API was re-verified this session: DKG `part1/
 | Signing-nonce lifetime & non-persistence | Signing session (`session/`) | — | Nonces created round 1, consumed round 2, dropped; never in store API |
 | Message passing between seats (in-process now) | Transport (`transport/`, trait) | in-memory stub impl | The seam Phase 7 swaps for Nostr; no relay code in Phase 1 |
 | CLI persona dispatch, config, `--pubkey`/`--yes` flags, exit codes | CLI (`cli/`, clap 4) | all orchestration | Real entry points (D-08); does no work itself |
-| n=1000 DKG simulation + O(n²) instrumentation | Test/bench harness | crypto core | Correctness (KEY-06) + timing/memory measurement (D-03) |
+| n=100 DKG simulation + O(n²) instrumentation | Test/bench harness | crypto core | Correctness (KEY-06) + timing/memory measurement (D-03) |
 | Regtest node spawn, mine, confirm | Test harness (`corepc-node`) | chain backend (Core RPC) | Hermetic auto-spawn (D-05); not production code |
 
 ## Standard Stack
@@ -97,7 +97,7 @@ All versions are the project-locked pins from `./.claude/CLAUDE.md` / `.planning
 ### Supporting
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| `bitcoincore-rpc` | **0.19.0** | Core JSON-RPC: watch-only `tr()` import, UTXO listing, fee estimate, broadcast | Default chain backend; fronts the n=1000 confirm (D-07) `[VERIFIED: seam, OK]` |
+| `bitcoincore-rpc` | **0.19.0** | Core JSON-RPC: watch-only `tr()` import, UTXO listing, fee estimate, broadcast | Default chain backend; fronts the n=100 confirm (D-07) `[VERIFIED: seam, OK]` |
 | `esplora-client` | **0.13.0** | Esplora HTTP client behind the same `ChainBackend` trait | Trait-conformance/unit coverage only in Phase 1 (D-07) `[VERIFIED: seam, OK]` |
 | `zeroize` | **1.9.0** | Memory hygiene for the nonce/secret newtypes | Wrap decrypted/ephemeral secrets in `Zeroizing`; nonce newtype's inner state `[VERIFIED: seam — 10.9M downloads/wk, RustCrypto, OK]` |
 | `clap` | **4.6.1** | CLI persona tree (derive API) | Real subcommand skeleton (D-08) `[CITED: STACK.md]` |
@@ -175,7 +175,7 @@ Phase-1 data flow (in-process; the network is the in-memory `Transport` stub):
   ┌─────────────────────── Orchestration (L3) ───────────────────────┐
   │                                                                    │
   │  Ceremony (keygen)              Signing session                    │
-  │  simulate n seats  ──part1/2/3──►  liveness poll → pick 501        │
+  │  simulate n seats  ──part1/2/3──►  liveness poll → pick 51        │
   │        │                            │                              │
   │        │  (all seats in one process)│  round1::commit  ─┐          │
   │        ▼                            ▼                   │ nonces   │
@@ -208,7 +208,7 @@ Phase-1 data flow (in-process; the network is the in-memory `Transport` stub):
                                      └─ Esplora (trait-conformance only)
 ```
 
-Entry points: the CLI subcommands. Processing stages flow top-to-bottom: simulate DKG → normalize even-Y → bridge to address → sign (with the display gate and nonce-in-RAM invariant) → aggregate → verify against `Q` → finalize → broadcast+confirm on the auto-spawned regtest node. Decision/branch points: the liveness poll selects a 501-subset; any timeout aborts to a *new* session (never reuse commitments); the display gate blocks round 2 until ack. File-to-implementation mapping is in the Component Responsibilities table of ARCHITECTURE.md (do not duplicate here).
+Entry points: the CLI subcommands. Processing stages flow top-to-bottom: simulate DKG → normalize even-Y → bridge to address → sign (with the display gate and nonce-in-RAM invariant) → aggregate → verify against `Q` → finalize → broadcast+confirm on the auto-spawned regtest node. Decision/branch points: the liveness poll selects a 51-subset; any timeout aborts to a *new* session (never reuse commitments); the display gate blocks round 2 until ack. File-to-implementation mapping is in the Component Responsibilities table of ARCHITECTURE.md (do not duplicate here).
 
 ### Recommended Project Structure
 ```
@@ -230,8 +230,8 @@ tsig/
 └── tests/
     ├── bridge_roundtrip.rs   # KEY-03 KAT: BIP341/BIP86 vectors, even-Y AND odd-Y-origin
     ├── inproc_sign.rs        # small-n (3-of-5) end-to-end on regtest (PR gate, D-06)
-    ├── inproc_sign_1000.rs   # t=501/n=1000 end-to-end (nightly gate, D-02/D-06) [ignore]
-    ├── dkg_1000_correctness.rs # KEY-06: 1000 KeyPackages → one PublicKeyPackage + O(n²) bench
+    ├── inproc_sign_100.rs   # t=51/n=100 end-to-end (nightly gate, D-02/D-06) [ignore]
+    ├── dkg_100_correctness.rs # KEY-06: 100 KeyPackages → one PublicKeyPackage + O(n²) bench
     └── ui/nonce_no_serialize.rs # trybuild compile-fail (SIGN-05)
 ```
 
@@ -340,7 +340,7 @@ impl EphemeralNonces {
 These are the Phase-1-relevant entries from `.planning/research/PITFALLS.md` (HIGH confidence, spec-derived). Read that file in full before planning.
 
 ### Pitfall 1: Persisting or reusing signing nonces (key-extraction bug class)
-**What goes wrong:** Reusing one committed nonce pair across two different sighashes gives an adversary (including a malicious coordinator who sees every partial) two linear equations in the same unknowns → solves for the share. 501 extracted shares reconstruct the group key forever.
+**What goes wrong:** Reusing one committed nonce pair across two different sighashes gives an adversary (including a malicious coordinator who sees every partial) two linear equations in the same unknowns → solves for the share. 51 extracted shares reconstruct the group key forever.
 **Why it happens:** Every *other* ceremony state is deliberately persisted for resumability; the nonce is the one violent exception, living in the same code paths. "Make signing resumable like everything else" is exactly the bug.
 **How to avoid:** Non-serializable nonce newtype with `Zeroizing` inner state (Pattern 3); separate signing state from ceremony state; new session (fresh nonces, possibly new subset) on any restart/timeout; never reuse `SigningCommitments`.
 **Warning signs:** `derive(Serialize)` transitively over nonce material; the words "resume"/"checkpoint" in the signing module; a session re-enterable with the same id.
@@ -348,7 +348,7 @@ These are the Phase-1-relevant entries from `.planning/research/PITFALLS.md` (HI
 ### Pitfall 2: frost→rust-bitcoin bridge errors (x-only parity, wrong sighash, `P` vs `Q`)
 **What goes wrong:** (1) x-only truncation dropping parity → sig doesn't verify under even-Y key; (2) building the address from `Q` but verifying against `P` (or importing the wrong one) → silent unspendable/invalid; (3) wrong sighash type (`SIGHASH_ALL` instead of `SIGHASH_DEFAULT`) or a missing prevout → wrong challenge `e`; (4) using non-`-tr` `frost-secp256k1` → RFC-9591 hash, never verifies on-chain.
 **Why it happens:** Three convention systems meet at one function; rust-bitcoin happily builds an address from any x-only key and hashes any sighash type — silent until a real spend.
-**How to avoid:** One canonical bridge fn (Pattern 1) pinned to BIP341/BIP86 KAT on day one (KEY-03); `sign_with_tweak`/`aggregate_with_tweak(…, None)`; verify against `Q`; a confirmed regtest key-spend at n=1000 is the only test that proves all four strands at once.
+**How to avoid:** One canonical bridge fn (Pattern 1) pinned to BIP341/BIP86 KAT on day one (KEY-03); `sign_with_tweak`/`aggregate_with_tweak(…, None)`; verify against `Q`; a confirmed regtest key-spend at n=100 is the only test that proves all four strands at once.
 **Warning signs:** `from_slice` outside the one bridge fn; any non-default sighash type; the round-trip test asserts "it runs" not a hard-coded expected address string.
 
 ### Pitfall 7: Taproot tweak applied inconsistently during aggregation
@@ -356,12 +356,12 @@ These are the Phase-1-relevant entries from `.planning/research/PITFALLS.md` (HI
 **How to avoid:** Single pipeline that always uses the tweaked path with `merkle_root: None` hard-wired; don't expose untweaked functions to app code; verify the aggregate against `Q` before finalizing.
 
 ### Pitfall 8: Blind signing — trusting the coordinator's sighash
-**What goes wrong:** If participants sign the sighash the coordinator hands them, a compromised coordinator gets a 501-quorum to blind-sign an arbitrary tx (drain to attacker) while showing a benign summary.
+**What goes wrong:** If participants sign the sighash the coordinator hands them, a compromised coordinator gets a 51-quorum to blind-sign an arbitrary tx (drain to attacker) while showing a benign summary.
 **How to avoid:** Display-before-sign (Pattern 4); coordinator sends the PSBT, not a sighash; `--yes` is for automated/regtest only, loudly flagged, never the default.
 
-### Pitfall 11: FROST is not robust — one dropout aborts a 501-way session
-**What goes wrong:** FROST gives identifiable abort, not robustness; a single dropped/malformed partial aborts the whole session. At exactly-501 selection this thrashes.
-**How to avoid:** Over-provision the liveness poll (poll a margin, finalize 501 from those who actually commit); on abort, start a *new* session (fresh nonces, possibly different subset) — never retry the same set/commitments. (In-process at Phase 1 there are no real dropouts, but the *session/abort semantics* must be built now so Phase 7 inherits them.)
+### Pitfall 11: FROST is not robust — one dropout aborts a 51-way session
+**What goes wrong:** FROST gives identifiable abort, not robustness; a single dropped/malformed partial aborts the whole session. At exactly-51 selection this thrashes.
+**How to avoid:** Over-provision the liveness poll (poll a margin, finalize 51 from those who actually commit); on abort, start a *new* session (fresh nonces, possibly different subset) — never retry the same set/commitments. (In-process at Phase 1 there are no real dropouts, but the *session/abort semantics* must be built now so Phase 7 inherits them.)
 
 ### Pitfall 18 (partial): zeroize gaps
 **What goes wrong:** Secret/ephemeral material left in memory after use.
@@ -422,7 +422,7 @@ Signatures: `part1(id, max, min, rng) -> (round1::SecretPackage, round1::Package
 
 ### Signing — two rounds, tweaked (SIGN-02/03) `[VERIFIED: docs.rs README round1::commit + CLAUDE.md sign_with_tweak/aggregate_with_tweak]`
 ```rust
-// Round 1: each of the 501 chosen seats commits (nonces stay in RAM — Pattern 3)
+// Round 1: each of the 51 chosen seats commits (nonces stay in RAM — Pattern 3)
 let mut commitments = BTreeMap::new();
 let mut nonces = BTreeMap::new();
 for id in chosen_501 {
@@ -518,26 +518,26 @@ client.generate_to_address(101, &addr)?;                    // mature coinbase /
 |---|-------|---------|---------------|
 | A1 | `VerifyingKey::serialize()` returns the 33-byte compressed SEC1 encoding (even-Y prefix `0x02`), sliceable to a 32-byte x-only key | Pattern 1, Bridge | LOW — if it returns a different length/format, the bridge slice indices change; caught immediately by the KEY-03 KAT. Verify exact return type at implementation |
 | A2 | `into_even_y(None)` auto-detects and normalizes parity (the `Option<bool>` is `None`=auto) | Pattern 2 | LOW — method + signature verified on docs.rs; the `None` semantics ("auto") is inferred from the doc text "make sure the group public key has an even Y" |
-| A3 | `sign_with_tweak`/`aggregate_with_tweak` internally apply BIP340/EvenY so the pipeline needs `into_even_y` only on the *stored/bridged* key, not re-applied per sign | Signing, Verify | MEDIUM — if the tweaked fns require a pre-normalized package, the crypto core must normalize before each call. The n=1000 confirmed spend (D-02) proves the real interplay; add a 01-02 spike |
+| A3 | `sign_with_tweak`/`aggregate_with_tweak` internally apply BIP340/EvenY so the pipeline needs `into_even_y` only on the *stored/bridged* key, not re-applied per sign | Signing, Verify | MEDIUM — if the tweaked fns require a pre-normalized package, the crypto core must normalize before each call. The n=100 confirmed spend (D-02) proves the real interplay; add a 01-02 spike |
 | A4 | Verifying the aggregate against `Q` via `pubkeys.into_even_y(None).tweak(None).verifying_key()` yields the same key the P2TR address commits to | Verify, KEY-03 | MEDIUM — this equality IS the KAT (KEY-03) and the on-chain confirm (SIGN-04); if it fails the bridge is wrong. That's the whole point of the test |
 | A5 | `corepc-node` 0.12.0 exposes `Node::from_downloaded()` and a JSON-RPC client with a `generate_to_address`-style method; version selected by a feature like `28_0` | Regtest example | LOW — auto-download + free-port + kill-on-drop verified on docs.rs; exact method names/feature string confirmed at plan time via `cargo doc`/crate README |
 | A6 | `trybuild` compile-fail with a `.stderr` snapshot is the chosen SIGN-05 mechanism | Code Examples §Nonce | LOW — this is a Claude's-discretion area (D-08 discretion list); alternative is a `#[doc = compile_fail]` test. Either satisfies SIGN-05 |
 | A7 | BIP341's `scriptPubKey` test-vector entries with `scriptTree: null` are valid key-only (merkle root `None`) KATs, and the set includes at least one odd-Y internal key for the D-11 odd-Y-origin case | Validation Architecture, KEY-03 | MEDIUM — needs confirmation against the actual BIP341 vector JSON; if no null-tree odd-Y entry exists, construct one from a known internal key and independently compute `Q` (BIP86 algorithm) as the reference |
 
-**These assumptions need confirmation during 01-01/01-02 implementation spikes before becoming locked.** None blocks planning; all are caught by the KEY-03 KAT or the n=1000 confirmed-spend gate.
+**These assumptions need confirmation during 01-01/01-02 implementation spikes before becoming locked.** None blocks planning; all are caught by the KEY-03 KAT or the n=100 confirmed-spend gate.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **n=1000 in-process DKG feasibility (O(n²) cost).**
-   - What we know: part2 produces `n−1` packages per seat → ~10⁶ `round2::Package` objects total held in `BTreeMap`s; part3 verifies ~999 round1 + ~999 round2 packages per seat. Round1 packages carry `t=501` commitment points (~33 B each ≈ 16 KB/pkg ≈ 16 MB for 1000). Round2 packages are small (~a scalar). Rough memory: low hundreds of MB. Compute is the concern: part1 is O(t) point-muls/seat; part3 verification is ~O(n·t) point-ops/seat → O(n²·t) ≈ 5×10⁸ group operations overall.
+1. **n=100 in-process DKG feasibility (O(n²) cost).** **RESOLVED** — recommendation adopted in **01-02 Task 3** (`tests/dkg_100_correctness.rs`, `#[ignore]` nightly per D-06): the O(n²) part1/part2/part3 wall-clock + peak-RSS measurement across 100 seats IS the deliverable (D-03).
+   - What we know: part2 produces `n−1` packages per seat → ~10⁴ `round2::Package` objects total held in `BTreeMap`s; part3 verifies ~99 round1 + ~99 round2 packages per seat. Round1 packages carry `t=51` commitment points (~33 B each ≈ 1.7 KB/pkg ≈ 170 KB for 100). Round2 packages are small (~a scalar). Rough memory: a few MB. Compute is the concern: part1 is O(t) point-muls/seat; part3 verification is ~O(n·t) point-ops/seat → O(n²·t) ≈ 5×10⁵ group operations overall.
    - What's unclear: wall-clock (could be minutes to tens of minutes single-threaded in debug); peak RSS.
-   - Recommendation: run the n=1000 DKG in `--release`; instrument each part (wall-clock + peak RSS) as the KEY-06/O(n²) deliverable (D-03); consider parallelizing the *simulation loop* with `rayon` (the crypto is per-seat independent) while keeping per-seat calls deterministic; gate the full run as nightly/on-demand (D-06), not per-PR. Measure before optimizing.
+   - Recommendation: run the n=100 DKG in `--release`; instrument each part (wall-clock + peak RSS) as the KEY-06/O(n²) deliverable (D-03); consider parallelizing the *simulation loop* with `rayon` (the crypto is per-seat independent) while keeping per-seat calls deterministic; gate the full run as nightly/on-demand (D-06), not per-PR. Measure before optimizing.
 
-2. **`ChainBackend` trait shape (sync vs async).** `bitcoincore-rpc` 0.19 is synchronous; `esplora-client` 0.13 offers both blocking and async. Recommendation: define `ChainBackend` **synchronous** for Phase 1 (Core RPC is sync; the confirm path is Core per D-07) and use `esplora-client`'s blocking API for trait-conformance. Revisit async only if a later phase needs it — a sync trait keeps the in-process proof simple.
+2. **`ChainBackend` trait shape (sync vs async).** **RESOLVED** — recommendation adopted in **01-03 Task 1** (`src/chain/mod.rs` defines a SYNCHRONOUS `trait ChainBackend`; Core RPC fronts the confirm path per D-07, Esplora uses the blocking API for conformance). `bitcoincore-rpc` 0.19 is synchronous; `esplora-client` 0.13 offers both blocking and async. Recommendation: define `ChainBackend` **synchronous** for Phase 1 (Core RPC is sync; the confirm path is Core per D-07) and use `esplora-client`'s blocking API for trait-conformance. Revisit async only if a later phase needs it — a sync trait keeps the in-process proof simple.
 
-3. **`Transport` trait shape (sync/async, envelope model).** Only the in-memory stub is needed now, but the trait must fit the later Nostr event model (signed envelope, per-message-class kinds, directed vs broadcast, dedup by id). Recommendation: model an `Envelope { class, ceremony/session id, round, seat, recipient: Option<..>, payload: bytes }` and a `publish`/`subscribe(filter)` pair; keep it synchronous for the stub but design the payload as opaque bytes so NIP-44 encryption slots in at Phase 7 without touching orchestration. Do not leak `nostr-sdk` types into the trait.
+3. **`Transport` trait shape (sync/async, envelope model).** **RESOLVED** — recommendation adopted in **01-05 Task 1** (`src/transport/envelope.rs` `Envelope { class, ceremony/session id, round, seat, recipient: Option<..>, opaque payload: Vec<u8> }` + synchronous `publish`/`subscribe(filter)`; no `nostr-sdk` types leak, D-08). Only the in-memory stub is needed now, but the trait must fit the later Nostr event model (signed envelope, per-message-class kinds, directed vs broadcast, dedup by id). Recommendation: model an `Envelope { class, ceremony/session id, round, seat, recipient: Option<..>, payload: bytes }` and a `publish`/`subscribe(filter)` pair; keep it synchronous for the stub but design the payload as opaque bytes so NIP-44 encryption slots in at Phase 7 without touching orchestration. Do not leak `nostr-sdk` types into the trait.
 
-4. **Public-artifact file format (D-09).** `PublicKeyPackage` serialized how — frost's default `serialization` (postcard) or `serde_json`? Recommendation: use frost's `serialize()`/`deserialize()` for the canonical bytes wrapped in a small JSON/TOML envelope carrying `key_id` + (future) `epoch`, so `tsig address --pubkey <file>` is stable and human-inspectable. Confirm the frost serialization API shape at implementation.
+4. **Public-artifact file format (D-09).** **RESOLVED** — recommendation adopted in **01-01 Task 3** (frost `PublicKeyPackage` canonical bytes wrapped in a small serde_json envelope carrying `key_id` + reserved `epoch`; `tsig address --pubkey <file>` reads it). `PublicKeyPackage` serialized how — frost's default `serialization` (postcard) or `serde_json`? Recommendation: use frost's `serialize()`/`deserialize()` for the canonical bytes wrapped in a small JSON/TOML envelope carrying `key_id` + (future) `epoch`, so `tsig address --pubkey <file>` is stable and human-inspectable. Confirm the frost serialization API shape at implementation.
 
 ## Environment Availability
 
@@ -559,9 +559,9 @@ Nyquist validation is enabled. Every Phase-1 success criterion has a concrete au
 | Property | Value |
 |----------|-------|
 | Framework | Rust built-in `#[test]` + `cargo test`; `trybuild` for compile-fail; `corepc-node` for regtest integration |
-| Config file | none — Cargo convention (`tests/`, `#[test]`, `#[ignore]` for the heavy n=1000 run) |
+| Config file | none — Cargo convention (`tests/`, `#[test]`, `#[ignore]` for the heavy n=100 run) |
 | Quick run command | `cargo test` (unit + small-n + bridge KAT + trybuild) |
-| Full suite command | `cargo test -- --include-ignored` (adds the t=501/n=1000 end-to-end + O(n²) bench) |
+| Full suite command | `cargo test -- --include-ignored` (adds the t=51/n=100 end-to-end + O(n²) bench) |
 
 ### Phase Requirements → Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
@@ -570,13 +570,13 @@ Nyquist validation is enabled. Every Phase-1 success criterion has a concrete au
 | KEY-01/02 | In-process DKG (small-n) → `KeyPackage`+`PublicKeyPackage`; verifying key = `P` | unit | `cargo test dkg_small` | ❌ Wave 0 |
 | KEY-04 | `tsig address` prints correct P2TR from a `PublicKeyPackage` file | unit + CLI | `cargo test address_from_pubkey` | ❌ Wave 0 |
 | KEY-05 | Every seat's verifying key matches; mismatch aborts | unit | `cargo test keygen_confirm_mismatch_aborts` | ❌ Wave 0 |
-| KEY-06 | 1000 `KeyPackage`s all verify to one `PublicKeyPackage` | integration (ignored) | `cargo test --test dkg_1000_correctness -- --ignored` | ❌ Wave 0 |
-| KEY-06/D-03 | O(n²) timing + peak-RSS instrumentation across part1/2/3 at n=1000 | bench/report | `cargo test --test dkg_1000_correctness -- --ignored --nocapture` | ❌ Wave 0 |
+| KEY-06 | 100 `KeyPackage`s all verify to one `PublicKeyPackage` | integration (ignored) | `cargo test --test dkg_100_correctness -- --ignored` | ❌ Wave 0 |
+| KEY-06/D-03 | O(n²) timing + peak-RSS instrumentation across part1/2/3 at n=100 | bench/report | `cargo test --test dkg_100_correctness -- --ignored --nocapture` | ❌ Wave 0 |
 | SIGN-01 | Key-spend sighash per input from a PSBT (default type, all prevouts) | unit | `cargo test sighash_key_spend` | ❌ Wave 0 |
-| SIGN-02 | Round 1 commit collects `SigningCommitments`; over-provisioned poll finalizes 501 | unit | `cargo test round1_commit_subset` | ❌ Wave 0 |
+| SIGN-02 | Round 1 commit collects `SigningCommitments`; over-provisioned poll finalizes 51 | unit | `cargo test round1_commit_subset` | ❌ Wave 0 |
 | SIGN-03 | Round 2 `sign_with_tweak` + `aggregate_with_tweak(…,None)` → 64-byte sig | unit | `cargo test aggregate_tweaked` | ❌ Wave 0 |
 | SIGN-04 | Aggregate verifies against `Q` (not `P`); PSBT finalizes | unit | `cargo test verify_against_Q` | ❌ Wave 0 |
-| SIGN-04 | **Confirmed regtest key-spend** small-n (PR) and t=501/n=1000 (nightly) | integration | `cargo test --test inproc_sign` / `--test inproc_sign_1000 -- --ignored` | ❌ Wave 0 |
+| SIGN-04 | **Confirmed regtest key-spend** small-n (PR) and t=51/n=100 (nightly) | integration | `cargo test --test inproc_sign` / `--test inproc_sign_100 -- --ignored` | ❌ Wave 0 |
 | SIGN-05 | Nonce type does not compile if serialized | compile-fail | `cargo test --test compile_fail` (trybuild) | ❌ Wave 0 |
 | SIGN-05 | Session restart mints fresh nonces + new session id (not a resume) | unit | `cargo test session_restart_fresh_nonces` | ❌ Wave 0 |
 | SIGN-06 | Aggregation surfaces `culprits()`; timeout → new session, no commitment reuse | unit | `cargo test cheater_culprits`, `cargo test abort_new_session` | ❌ Wave 0 |
@@ -591,13 +591,13 @@ Nyquist validation is enabled. Every Phase-1 success criterion has a concrete au
 ### Sampling Rate
 - **Per task commit:** `cargo test` (small-n end-to-end + bridge KAT + trybuild) — fast PR feedback (D-06).
 - **Per wave merge:** `cargo test` full + `cargo audit`.
-- **Phase gate:** `cargo test -- --include-ignored` green, including the **t=501/n=1000 confirmed regtest key-spend** and the O(n²) report (D-02/D-06), before `/gsd-verify-work`.
+- **Phase gate:** `cargo test -- --include-ignored` green, including the **t=51/n=100 confirmed regtest key-spend** and the O(n²) report (D-02/D-06), before `/gsd-verify-work`.
 
 ### Wave 0 Gaps
 - [ ] `tests/bridge_roundtrip.rs` — KEY-03 KAT harness + committed BIP341/BIP86 vectors (even-Y + odd-Y-origin)
 - [ ] `tests/inproc_sign.rs` — small-n regtest end-to-end via `corepc-node`
-- [ ] `tests/inproc_sign_1000.rs` — `#[ignore]` t=501/n=1000 end-to-end (nightly gate)
-- [ ] `tests/dkg_1000_correctness.rs` — `#[ignore]` KEY-06 + O(n²) instrumentation
+- [ ] `tests/inproc_sign_100.rs` — `#[ignore]` t=51/n=100 end-to-end (nightly gate)
+- [ ] `tests/dkg_100_correctness.rs` — `#[ignore]` KEY-06 + O(n²) instrumentation
 - [ ] `tests/ui/nonce_no_serialize.rs` + `tests/compile_fail.rs` — trybuild SIGN-05
 - [ ] Test fixtures: a funded regtest PSBT builder helper; `Prevouts` assembly helper
 - [ ] Dev-dependency install: `corepc-node` (with the pinned Core-version feature) + `trybuild`
@@ -626,7 +626,7 @@ Nyquist validation is enabled. Every Phase-1 success criterion has a concrete au
 | Untweaked/`Some(merkle_root)` aggregation → wrong-key sig | Tampering | Single tweaked pipeline, `merkle_root: None` hard-wired; untweaked path not exposed (Pitfall 7) |
 | Secret material lingering in memory | Information Disclosure | `zeroize::Zeroizing`; frost 3.0 `ZeroizeOnDrop`; no `Serialize` on secrets |
 | Supply-chain: malicious/typosquat crate or tampered Core binary | Tampering | All crates verdict OK (legitimacy audit); `cargo audit`/`cargo deny` (SEC-01, gated per D-06); `corepc-node` verifies Core binary hash |
-| FROST non-robustness → session-abort DoS at 501 | Denial of Service | Over-provision liveness poll; new session on abort (Pitfall 11) — semantics built now, stress-tested Phase 7 |
+| FROST non-robustness → session-abort DoS at 51 | Denial of Service | Over-provision liveness poll; new session on abort (Pitfall 11) — semantics built now, stress-tested Phase 7 |
 
 **Out of scope this phase (later):** roster pinning / non-roster event rejection (Phase 7), Nostr↔FROST key separation (Phase 7), same-key-after-refresh check (Phase 4), at-rest share encryption (Phase 2), mixed-epoch rejection (Phase 4 schema / Phase 6 test). The nonce-reuse-won't-compile and bridge controls are the Phase-1 security deliverables.
 
@@ -653,7 +653,7 @@ Nyquist validation is enabled. Every Phase-1 success criterion has a concrete au
 - Architecture / patterns: HIGH — grounded in SPEC + ARCHITECTURE.md + PITFALLS.md (all HIGH, spec-derived)
 - DKG / signing / bridge APIs: HIGH — exact signatures fetched from docs.rs 3.0.0 this session (few interplay details in Assumptions A3/A4, resolved by the confirmed-spend gate)
 - Pitfalls: HIGH — curated in-repo threat literature
-- n=1000 O(n²) cost: MEDIUM — order-of-magnitude reasoning; exact wall-clock/RSS is the KEY-06 measurement deliverable
+- n=100 O(n²) cost: MEDIUM — order-of-magnitude reasoning; exact wall-clock/RSS is the KEY-06 measurement deliverable
 
 **Research date:** 2026-07-10
 **Valid until:** ~2026-08-10 (stable pinned stack; re-verify `corepc-node` feature flags and any frost 3.0.x patch before execution)

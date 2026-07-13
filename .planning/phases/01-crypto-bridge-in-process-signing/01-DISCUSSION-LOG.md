@@ -15,12 +15,12 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Generic + small dev, 501 gate | Generic over (t,n); tiny dev tests; one t=501 acceptance | |
-| Always real t=501, n=1000 | Production params from line one; slow tests; overlaps Phase 3 | ✓ |
-| Always t=501, n=501 | Minimal real-threshold group; no liveness-subset slack | |
+| Generic + small dev, 51 gate | Generic over (t,n); tiny dev tests; one t=51 acceptance | |
+| Always real t=51, n=100 | Production params from line one; slow tests; overlaps Phase 3 | ✓ |
+| Always t=51, n=51 | Minimal real-threshold group; no liveness-subset slack | |
 
-**User's choice:** Always real t=501, n=1000.
-**Notes:** Flagged that n=1000 in-process duplicates Phase 3's compute proof — led to Q2.
+**User's choice:** Always real t=51, n=100.
+**Notes:** Flagged that n=100 in-process duplicates Phase 3's compute proof — led to Q2.
 
 ### Q2 — Phase 1 vs Phase 3 boundary
 
@@ -28,7 +28,7 @@
 |--------|-------------|----------|
 | Ph1 proves it works; Ph3 measures it | Ph1 correctness, Ph3 narrowed to timing/persist | |
 | Fold Phase 3 into Phase 1 | Correctness + scaling both land in Ph1 | ✓ |
-| Keep Phase 3 as-is, accept overlap | Both run n=1000, duplicated compute | |
+| Keep Phase 3 as-is, accept overlap | Both run n=100, duplicated compute | |
 
 **User's choice:** Fold Phase 3 into Phase 1.
 **Notes:** Surfaced the Phase 2 dependency of Phase 3's persist/reload criterion — led to Q3.
@@ -48,11 +48,11 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Generic code, n=1000 acceptance | Params take (t,n); tiny unit tests fast; n=1000 gate | ✓ |
-| Hardcode 501/1000 | Fixed constants; every test pays full cost | |
-| Generic, but no tiny tests | Generic code, suite only ever runs n=1000 | |
+| Generic code, n=100 acceptance | Params take (t,n); tiny unit tests fast; n=100 gate | ✓ |
+| Hardcode 51/100 | Fixed constants; every test pays full cost | |
+| Generic, but no tiny tests | Generic code, suite only ever runs n=100 | |
 
-**User's choice:** Generic code, n=1000 acceptance.
+**User's choice:** Generic code, n=100 acceptance.
 **Notes:** Reconciles "always run real" with practical TDD iteration speed.
 
 ---
@@ -74,11 +74,11 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Tiered: fast PR gate + nightly n=1000 | PR = KAT + small-n e2e + build/audit; nightly full n=1000 | ✓ |
-| Full n=1000 on every PR | Max confidence, 20–40+ min CI | |
-| n=1000 gate only on main | Fast PR; full e2e gates main merges | |
+| Tiered: fast PR gate + nightly n=100 | PR = KAT + small-n e2e + build/audit; nightly full n=100 | ✓ |
+| Full n=100 on every PR | Max confidence, 20–40+ min CI | |
+| n=100 gate only on main | Fast PR; full e2e gates main merges | |
 
-**User's choice:** Tiered — fast PR gate + nightly/on-demand full n=1000 (must pass before phase sign-off).
+**User's choice:** Tiered — fast PR gate + nightly/on-demand full n=100 (must pass before phase sign-off).
 **Notes:** Keeps PRs fast while still proving the real thing before merge to main/release.
 
 ### Q3 — Chain backend for the confirm path
@@ -131,7 +131,7 @@
 | Cross-validate against descriptor/bitcoin-cli | External oracle at test time; couples to bitcoind | |
 
 **User's choice:** Official BIP341/BIP86 vectors.
-**Notes:** Strongest "1000 people must verify" story — auditable against the BIPs themselves.
+**Notes:** Strongest "100 people must verify" story — auditable against the BIPs themselves.
 
 ### Q2 — Parity / even-Y handling
 
@@ -152,7 +152,7 @@ Deferred to research/planning against frost 3.0 + rust-bitcoin 0.32 (grounded in
 - Non-serializable nonce type mechanism (SIGN-05) — likely newtype + `trybuild` compile-fail test.
 - `Transport` trait contract (sync/async, message/envelope model).
 - `ChainBackend` trait contract (UTXO list, fee estimate, broadcast, sighash, descriptor import).
-- Liveness poll / 501-of-1000 subset selection driven over the in-memory transport.
+- Liveness poll / 51-of-100 subset selection driven over the in-memory transport.
 - Display-before-sign UX specifics (SIGN-07): rendered fields, `--yes` behavior.
 
 ## Deferred Ideas

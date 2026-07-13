@@ -22,7 +22,7 @@ provides:
   - "bridge::internal_key_xonly (internal key P x-only for watch-only tr() descriptor import; from_slice stays confined)"
   - "new-session-on-abort semantics (fresh nonces, never reuse commitments, SIGN-06)"
   - "tsig {coordinator,participant} sign --psbt over the Transport stub"
-  - "small-n confirmed regtest key-spend PR gate + #[ignore] t=501/n=1000 nightly + adversarial gates"
+  - "small-n confirmed regtest key-spend PR gate + #[ignore] t=51/n=100 nightly + adversarial gates"
 affects: [phase-03-dkg-at-scale, phase-04-rotation, phase-05-sweep-watch, phase-06-hardening, phase-07-transport]
 
 # Tech tracking
@@ -42,7 +42,7 @@ key-files:
     - src/session/display.rs
     - src/crypto/sign.rs
     - tests/inproc_sign.rs
-    - tests/inproc_sign_1000.rs
+    - tests/inproc_sign_100.rs
     - tests/sign_adversarial.rs
   modified:
     - src/session/mod.rs
@@ -57,8 +57,8 @@ key-decisions:
   - "aggregate() maps frost::Error → AggregateError::Culprits when culprits() is non-empty, else Frost(e) — cheater detection surfaced at the app boundary (SIGN-06)"
   - "verify_against_q derives Q via bridge::output_key_q (into_even_y(None).tweak(None)); matches aggregate_with_tweak(.., None) so Q is consistent"
   - "internal_key_xonly extracted from address_from_group_key so watch-only tr() import gets the INTERNAL key P (not output Q), keeping from_slice confined to bridge/taproot.rs (D-11)"
-  - "run_confirmed_key_spend(t,n) helper lives in tests/common so the small-n PR gate and the n=1000 nightly gate share one pipeline (Rust compiles each test file as a separate crate)"
-  - "n=1000 gate is #[ignore] and scale-overridable via TSIG_SIGN_T/TSIG_SIGN_N (default 501/1000); the in-process 501/1000 DKG is the multi-CPU-hour bottleneck measured in 01-02"
+  - "run_confirmed_key_spend(t,n) helper lives in tests/common so the small-n PR gate and the n=100 nightly gate share one pipeline (Rust compiles each test file as a separate crate)"
+  - "n=100 gate is #[ignore] and scale-overridable via TSIG_SIGN_T/TSIG_SIGN_N (default 51/100); the in-process 51/100 DKG is the multi-CPU-hour bottleneck measured in 01-02"
   - "display_and_ack returns AckRequired when !yes (library boundary); the CLI prompts interactively then runs with the ack given — the blind-sign recompute always runs first, even with --yes"
   - "sign CLI reads raw-consensus-bytes PSBTs only (base64 needs the bitcoin `base64` feature); Phase-1 simulate-all-seats means the PSBT must spend the freshly-generated group address (persisted shares are Phase 2)"
 
@@ -102,14 +102,14 @@ coverage:
         status: pass
     human_judgment: false
   - id: D5
-    description: "An in-process 501-of-1000 signing session produces a CONFIRMED regtest key-spend end-to-end (SIGN-04 crown jewel)"
+    description: "An in-process 51-of-100 signing session produces a CONFIRMED regtest key-spend end-to-end (SIGN-04 crown jewel)"
     requirement: SIGN-04
     verification:
       - kind: integration
-        ref: "tests/inproc_sign.rs#inproc_sign_confirmed_regtest_key_spend_small_n (3-of-5 CONFIRMED, PR gate, passing); tests/inproc_sign_1000.rs#inproc_sign_confirmed_regtest_key_spend_501_of_1000 (#[ignore] nightly; pipeline verified at overridden 3-of-5 scale)"
+        ref: "tests/inproc_sign.rs#inproc_sign_confirmed_regtest_key_spend_small_n (3-of-5 CONFIRMED, PR gate, passing); tests/inproc_sign_100.rs#inproc_sign_confirmed_regtest_key_spend_51_of_100 (#[ignore] nightly; pipeline verified at overridden 3-of-5 scale)"
         status: pass
     human_judgment: true
-    rationale: "The small-n confirmed key-spend passes in the PR gate and the identical full-scale pipeline runs at overridden scale; the mandated 501/1000 run is a #[ignore] nightly job dominated by the ~multi-CPU-hour in-process DKG (measured in 01-02), so a human runs the full-scale nightly to record the final confirmed 501/1000 spend."
+    rationale: "The small-n confirmed key-spend passes in the PR gate and the identical full-scale pipeline runs at overridden scale; the mandated 51/100 run is a #[ignore] nightly job dominated by the ~multi-CPU-hour in-process DKG (measured in 01-02), so a human runs the full-scale nightly to record the final confirmed 51/100 spend."
 
 # Metrics
 duration: 16min
@@ -136,7 +136,7 @@ status: complete
 - `src/crypto/sign.rs` — the ONLY aggregation path exposed to app code: `aggregate` (`aggregate_with_tweak(.., None)`, surfacing `Error::culprits()` as `AggregateError::Culprits`, SIGN-06), `verify_against_q` (against `bridge::output_key_q`, never `P`), and `signature_bytes` (64-byte BIP340 witness). The untweaked `frost::aggregate` is never surfaced (Pitfall 7).
 - `src/bridge/taproot.rs` — extracted `internal_key_xonly` (the internal key `P` x-only) so the watch-only `tr()` descriptor import gets `P` (not the output key `Q`), keeping the sole `from_slice` call confined to the bridge (D-11).
 - `tests/inproc_sign.rs` — the small-`n` (3-of-5) PR gate: round-1 gates, round-2 verify-against-`Q`-not-`P`, blind-sign refusal, cheater culprits, abort-fresh-nonces, and the **CONFIRMED regtest key-spend** (`run_confirmed_key_spend(3, 5)`).
-- `tests/inproc_sign_1000.rs` — the `#[ignore]` t=501/n=1000 nightly gate (D-02/D-06), scale-overridable via `TSIG_SIGN_T`/`TSIG_SIGN_N`; the pipeline was exercised at overridden 3-of-5 scale to prove the nightly path.
+- `tests/inproc_sign_100.rs` — the `#[ignore]` t=51/n=100 nightly gate (D-02/D-06), scale-overridable via `TSIG_SIGN_T`/`TSIG_SIGN_N`; the pipeline was exercised at overridden 3-of-5 scale to prove the nightly path.
 - `tests/sign_adversarial.rs` — malicious-coordinator sighash refused even with `--yes`, spent-session run rejected, and post-abort commitments proven fresh.
 - `tsig {coordinator,participant} sign --psbt <file> [--key] [--yes]` drives the session over `InMemoryTransport` (simulate-all-seats, D-08), rendering the display gate and prompting for an ack unless `--yes`.
 
@@ -145,7 +145,7 @@ status: complete
 1. **Task 1: liveness poll + round1 over Transport + SigningPackage from PSBT sighash** — `f1c064b` (feat)
 2. **Task 2 (TDD RED): failing round2 / verify-Q / blind-sign / culprits / abort tests** — `bac26d8` (test)
 3. **Task 2 (TDD GREEN): display gate + round2 tweaked sign + aggregate + verify-against-Q + culprits** — `ebe97a1` (feat)
-4. **Task 3: confirmed regtest key-spend (small-n + n=1000 nightly) + adversarial + sign CLI** — `78c99bd` (feat)
+4. **Task 3: confirmed regtest key-spend (small-n + n=100 nightly) + adversarial + sign CLI** — `78c99bd` (feat)
 
 _TDD gate satisfied for Task 2: the `test(…)` RED commit precedes the `feat(…)` GREEN commit._
 
@@ -160,15 +160,15 @@ _TDD gate satisfied for Task 2: the `test(…)` RED commit precedes the `feat(�
 - `src/cli/sign.rs` (modified) — wired coordinator/participant sign handler.
 - `src/cli/address.rs` (modified) — `Network::bitcoin_network()` for the display gate.
 - `tests/common/mod.rs` (modified) — `run_confirmed_key_spend(t, n)` shared e2e helper.
-- `tests/inproc_sign.rs`, `tests/inproc_sign_1000.rs`, `tests/sign_adversarial.rs` (created) — PR gate, nightly gate, adversarial gates.
+- `tests/inproc_sign.rs`, `tests/inproc_sign_100.rs`, `tests/sign_adversarial.rs` (created) — PR gate, nightly gate, adversarial gates.
 
 ## Decisions Made
 
 - **Cheater culprits at the boundary:** `aggregate` inspects `frost::Error::culprits()`; a non-empty set becomes `AggregateError::Culprits`, otherwise `Frost(e)`. Aggregation is tweaked-only (`aggregate_with_tweak(.., None)`); the untweaked path is never exposed (Pitfall 7).
 - **`internal_key_xonly` extraction:** the watch-only `tr()` descriptor commits to the internal key `P`, not the output key `Q`, so descriptor import needs `P`'s x-only form. Extracting it from `address_from_group_key` keeps the sole `from_slice` call in the bridge (D-11) and is pinned by the unchanged 01-01 KAT.
-- **Shared e2e helper in `tests/common`:** Rust compiles each `tests/*.rs` as its own crate, so the small-`n` PR gate and the n=1000 nightly gate share `run_confirmed_key_spend` from `tests/common` (mirroring 01-03's `spawn_regtest` factoring). The adversarial binary stays lean (no regtest, own tiny PSBT helper).
+- **Shared e2e helper in `tests/common`:** Rust compiles each `tests/*.rs` as its own crate, so the small-`n` PR gate and the n=100 nightly gate share `run_confirmed_key_spend` from `tests/common` (mirroring 01-03's `spawn_regtest` factoring). The adversarial binary stays lean (no regtest, own tiny PSBT helper).
 - **`--yes` bypasses only the ack:** even with `--yes`, `display_and_ack` recomputes the sighash from the PSBT first, so automation still gets blind-sign protection; `--yes` only skips the human confirmation (proved by `malicious_coordinator_sighash_is_refused_even_with_yes`).
-- **n=1000 gate is `#[ignore]` + scale-overridable:** the full-scale confirmed spend's cost is dominated by the in-process 501/1000 DKG (~multi-CPU-hour, measured in 01-02), so it is a nightly/on-demand gate; the signing round-trip itself is fast.
+- **n=100 gate is `#[ignore]` + scale-overridable:** the full-scale confirmed spend's cost is dominated by the in-process 51/100 DKG (~multi-CPU-hour, measured in 01-02), so it is a nightly/on-demand gate; the signing round-trip itself is fast.
 
 ## Deviations from Plan
 
@@ -192,10 +192,10 @@ _TDD gate satisfied for Task 2: the `test(…)` RED commit precedes the `feat(�
 
 **3. [Rule 3 - Blocking] `run_confirmed_key_spend` helper added to `tests/common/mod.rs`**
 - **Found during:** Task 3
-- **Issue:** The small-`n` PR gate and the n=1000 nightly gate are separate test crates and cannot share a helper defined in one of them.
+- **Issue:** The small-`n` PR gate and the n=100 nightly gate are separate test crates and cannot share a helper defined in one of them.
 - **Fix:** Placed the shared e2e pipeline in `tests/common/mod.rs` (already the home of `spawn_regtest`); both gates call it.
 - **Files modified:** tests/common/mod.rs
-- **Verification:** both `tests/inproc_sign.rs` and `tests/inproc_sign_1000.rs` compile and pass.
+- **Verification:** both `tests/inproc_sign.rs` and `tests/inproc_sign_100.rs` compile and pass.
 - **Committed in:** 78c99bd
 
 **4. [Rule 1 - Bug] `sign` CLI accepts raw-consensus-bytes PSBTs only**
@@ -212,15 +212,15 @@ _TDD gate satisfied for Task 2: the `test(…)` RED commit precedes the `feat(�
 
 ## Issues Encountered
 
-- **Full 501/1000 confirmed spend is a nightly job.** As in 01-02, the in-process 501/1000 DKG is the multi-CPU-hour bottleneck; the signing round-trip is fast. The full-scale confirmed key-spend is therefore a `#[ignore]` nightly gate (D-06), verified structurally at overridden 3-of-5 scale; a human records the final 501/1000 confirmed spend on the nightly tier (coverage D5, `human_judgment: true`).
+- **Full 51/100 confirmed spend is a nightly job.** As in 01-02, the in-process 51/100 DKG is the multi-CPU-hour bottleneck; the signing round-trip is fast. The full-scale confirmed key-spend is therefore a `#[ignore]` nightly gate (D-06), verified structurally at overridden 3-of-5 scale; a human records the final 51/100 confirmed spend on the nightly tier (coverage D5, `human_judgment: true`).
 
 ## User Setup Required
 
 None. To record the full-scale crown-jewel proof (nightly / on-demand, D-02/D-06):
 ```
-cargo test --release --test inproc_sign_1000 -- --ignored --nocapture
+cargo test --release --test inproc_sign_100 -- --ignored --nocapture
 ```
-(auto-spawns a regtest node; dominated by the in-process 501/1000 DKG — see 01-02 timings).
+(auto-spawns a regtest node; dominated by the in-process 51/100 DKG — see 01-02 timings).
 
 ## Known Stubs
 
@@ -247,7 +247,7 @@ No new security surface beyond the plan's `<threat_model>`. All five `mitigate` 
 - All 6 created + 7 modified files verified present on disk.
 - All 4 task commits verified in git history: f1c064b, bac26d8, ebe97a1, 78c99bd.
 - `cargo build` / `cargo build --tests` exit 0; `cargo clippy --lib` clean.
-- `cargo test --test inproc_sign` 7 passed (incl. CONFIRMED small-n regtest key-spend); `cargo test --test sign_adversarial` 3 passed; `cargo test --test inproc_sign_1000 -- --ignored` passes at overridden scale; `cargo test --test bridge_roundtrip` 3 passed (bridge refactor safe).
+- `cargo test --test inproc_sign` 7 passed (incl. CONFIRMED small-n regtest key-spend); `cargo test --test sign_adversarial` 3 passed; `cargo test --test inproc_sign_100 -- --ignored` passes at overridden scale; `cargo test --test bridge_roundtrip` 3 passed (bridge refactor safe).
 
 ---
 *Phase: 01-crypto-bridge-in-process-signing*

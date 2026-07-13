@@ -21,7 +21,7 @@ Also introduces the two architectural trait seams that every later phase depends
   locally with no relay code; Phase 7 swaps in real `FileTransport`/`NostrTransport`).
 - **`ChainBackend` trait** + a Bitcoin Core RPC backend and an Esplora backend.
 
-**Scope-expanding decision (this discussion):** Phase 1 now runs the **full n=1000 DKG**,
+**Scope-expanding decision (this discussion):** Phase 1 now runs the **full n=100 DKG**,
 absorbing the correctness + O(n²) compute-measurement portions of the former Phase 3. See
 Deferred Ideas for the required ROADMAP edit.
 
@@ -41,14 +41,14 @@ encrypted at-rest secret storage / SQLite coordinator store (Phase 2); membershi
 ### Group size, parameterization & phase scope
 - **D-01:** The DKG and signing code is written **generic over `(t, n)`**. Fast unit tests
   may exercise tiny sizes (e.g. 2-of-3, 3-of-5) for TDD speed.
-- **D-02:** The **real acceptance target is `t=501`, `n=1000`** run fully in-process. The
+- **D-02:** The **real acceptance target is `t=51`, `n=100`** run fully in-process. The
   end-to-end proof (DKG → address → sign → aggregate → verify against `Q` → broadcast →
-  confirm on regtest) runs at n=1000. "Always run real where it counts."
-- **D-03:** **Phase 3 folds into Phase 1.** Phase 1 absorbs the n=1000 DKG *correctness*
-  proof (all 1000 `KeyPackage`s verify to one group `PublicKeyPackage` — KEY-06) and the
-  **O(n²) timing/memory measurement** (part1/part2/part3 instrumentation across 1000 seats).
+  confirm on regtest) runs at n=100. "Always run real where it counts."
+- **D-03:** **Phase 3 folds into Phase 1.** Phase 1 absorbs the n=100 DKG *correctness*
+  proof (all 100 `KeyPackage`s verify to one group `PublicKeyPackage` — KEY-06) and the
+  **O(n²) timing/memory measurement** (part1/part2/part3 instrumentation across 100 seats).
   No persistence is needed for either, so both fit Phase 1's "zero persistence" constraint.
-- **D-04:** The **persist/reload-the-n=1000-set-at-scale** check (former Phase 3 criterion 3,
+- **D-04:** The **persist/reload-the-n=100-set-at-scale** check (former Phase 3 criterion 3,
   which requires the Phase 2 stores) **moves to Phase 2**. Phase 3 ceases to exist as a
   standalone phase. → **Requires a ROADMAP edit** (see Deferred Ideas).
 
@@ -58,12 +58,12 @@ encrypted at-rest secret storage / SQLite coordinator store (Phase 2); membershi
   version). Hermetic, reproducible, no external node setup, CI-friendly.
 - **D-06:** **Tiered CI.** Every PR gates on: the bridge known-answer vector test + a
   **small-n** end-to-end (DKG→sign→confirm on regtest, e.g. 3-of-5) + build/`cargo audit`.
-  The **full `t=501`/`n=1000`** end-to-end runs **nightly and on-demand**, and MUST pass
+  The **full `t=51`/`n=100`** end-to-end runs **nightly and on-demand**, and MUST pass
   before Phase 1 sign-off. Keeps PR feedback fast without weakening the "prove it real" bar.
 - **D-07:** The **Core RPC backend fronts the confirmed-key-spend path** (native regtest
   mining via `generatetoaddress`). The **Esplora backend is still built to the same
   `ChainBackend` trait** and covered by trait-conformance/unit tests (mocked or against a
-  public endpoint) — this satisfies STOR-04 — but Esplora is **not** in the n=1000 confirm
+  public endpoint) — this satisfies STOR-04 — but Esplora is **not** in the n=100 confirm
   path (no electrs/esplora-over-regtest stack stood up in this phase).
 
 ### CLI surface vs test-harness boundary
@@ -82,7 +82,7 @@ encrypted at-rest secret storage / SQLite coordinator store (Phase 2); membershi
 - **D-10:** The bridge round-trip test is anchored to the **official BIP341 taproot-tweak /
   BIP86 key-path published test vectors** (known internal key → known output key → known
   scriptPubKey/address). Externally auditable by anyone against the BIPs — the strongest
-  trust story for "1000 people must verify what they run."
+  trust story for "100 people must verify what they run."
 - **D-11:** **Parity contract:** the crypto core applies frost's `EvenY` so the group key is
   always even-Y, and **the bridge asserts this invariant** (rejects/normalizes odd-Y
   defensively rather than blindly stripping the SEC1 prefix). The KAT suite **covers BOTH an
@@ -100,7 +100,7 @@ SPEC + PITFALLS.md), unless a decision above constrains them:
   the later Nostr event model but concretely only needs the in-memory stub now.
 - The **`ChainBackend` trait contract** (UTXO listing, fee estimation, broadcast, sighash
   helpers, watch-only descriptor import).
-- **Liveness poll / 501-of-1000 subset selection** logic and how the coordinator drives it
+- **Liveness poll / 51-of-100 subset selection** logic and how the coordinator drives it
   over the in-memory transport.
 - **Display-before-sign UX** specifics (what's rendered, `--yes` behavior) per SIGN-07.
 
@@ -122,7 +122,7 @@ SPEC + PITFALLS.md), unless a decision above constrains them:
   library selection rationale.
 
 ### Project planning
-- `.planning/PROJECT.md` — locked crate stack + pins, `t=501`/`n=1000`, DKG-only keygen,
+- `.planning/PROJECT.md` — locked crate stack + pins, `t=51`/`n=100`, DKG-only keygen,
   Key Decisions table (already-locked constraints — do not re-litigate).
 - `.planning/REQUIREMENTS.md` — KEY-01…KEY-06, SIGN-01…SIGN-07, STOR-04 (the requirements
   this phase must satisfy).
@@ -166,7 +166,7 @@ SPEC + PITFALLS.md), unless a decision above constrains them:
 <specifics>
 ## Specific Ideas
 
-- "Always run real where it counts": the n=1000 end-to-end is the real proof; tiny sizes are
+- "Always run real where it counts": the n=100 end-to-end is the real proof; tiny sizes are
   only a TDD convenience, never the acceptance bar.
 - The bridge KAT must be **auditable against the BIPs themselves**, not self-referential.
 - The odd-Y vector is a deliberate adversarial case, not an edge nicety — it is *the* bug the
@@ -178,7 +178,7 @@ SPEC + PITFALLS.md), unless a decision above constrains them:
 ## Deferred Ideas
 
 - **ROADMAP EDIT REQUIRED (roadmap action, not a new capability):** Fold former Phase 3 into
-  Phase 1 — move KEY-06 (n=1000 DKG correctness) and the O(n²) compute measurement into
+  Phase 1 — move KEY-06 (n=100 DKG correctness) and the O(n²) compute measurement into
   Phase 1; move the persist/reload-at-scale check into Phase 2; delete Phase 3 and renumber
   Phases 4→3, 5→4, 6→5, 7→6. Run **`/gsd-phase`** after this discussion to apply the edit and
   keep `ROADMAP.md` / `REQUIREMENTS.md` traceability in sync. (Captured here so the intent

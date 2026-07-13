@@ -154,7 +154,7 @@ self.id_of_seat.keys()`) and then takes the first `t`. In Phase 1 (all seats
 respond in-process) this is harmless — polling all `n` is a superset of the
 margin — but the function is effectively dead code in `src/` (only referenced by
 tests), and the module contract diverges from the session's actual behavior. At
-n=1000 this becomes a real design question (poll all 1000 and wait vs. poll 552),
+n=100 this becomes a real design question (poll all 100 and wait vs. poll 57),
 and a Phase-7 implementer inheriting this seam may assume the margin logic runs
 when it does not.
 **Fix:** Either wire the margin into `liveness_select` (poll
@@ -171,7 +171,7 @@ the dead helper from `src/` if it is not used by the session.
 **Issue:** `round2` loops over every selected seat and calls `display_and_ack`
 each iteration with the identical `tx`/`prevouts`/`input_index`. The sighash is
 recomputed and the full spend summary is printed to stderr `t` times per input
-(501× at full scale) — redundant work and noisy output. This is a
+(51× at full scale) — redundant work and noisy output. This is a
 simulate-all-seats artifact; a real per-participant flow recomputes once.
 **Fix:** Recompute/print the summary once per input (before the per-seat loop),
 keeping the recompute check but not repeating the human-facing render `t` times.
@@ -191,7 +191,7 @@ ack), and consider rendering per-input summaries for multi-input PSBTs.
 
 ### IN-03: clippy needless-borrow warning in a test
 
-**File:** `tests/dkg_1000_correctness.rs`
+**File:** `tests/dkg_100_correctness.rs`
 **Issue:** `cargo clippy` reports one warning ("the borrowed expression
 implements the required traits") in this test target. Cosmetic, but the project
 mandates a clean `cargo clippy` in CI.

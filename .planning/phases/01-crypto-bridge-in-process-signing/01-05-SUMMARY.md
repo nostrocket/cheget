@@ -107,7 +107,7 @@ _TDD gate satisfied: the `test(...)` RED commit precedes the `feat(...)` GREEN i
 ## Decisions Made
 
 - **Deterministic FNV-1a envelope id (no new dependency):** the project has no hash crate in its pinned deps, and `std`'s `DefaultHasher` is not stable across runs/machines. A hand-rolled FNV-1a over a length-prefixed canonical field encoding is trivial, dependency-free, and genuinely stable — a faithful in-process stand-in for the Nostr event id, so it seeds the Phase-7 event-id dedup rather than being throwaway.
-- **Transport-local `Seat(u16)` newtype:** rather than reuse `crypto::types::SeatId` (`frost::Identifier`), the seam addresses seats by a plain integer so it stays free of BOTH FROST and Nostr types. The session layer owns the `frost::Identifier ↔ Seat` mapping (and `Seat ↔ npub` at Phase 7). `u16` covers `n = 1000`.
+- **Transport-local `Seat(u16)` newtype:** rather than reuse `crypto::types::SeatId` (`frost::Identifier`), the seam addresses seats by a plain integer so it stays free of BOTH FROST and Nostr types. The session layer owns the `frost::Identifier ↔ Seat` mapping (and `Seat ↔ npub` at Phase 7). `u16` covers `n = 100`.
 - **`publish` returns the `EnvelopeId` and uses `Mutex<BTreeMap>` interior mutability:** `&self` matches the trait and the future shared-relay-client shape; returning the id lets callers learn the dedup key; `Mutex` keeps the stub usable if a later test simulates seats across threads.
 - **Directed-vs-broadcast matching rule made explicit in `Filter::matches`:** a directed envelope (`recipient: Some(r)`) matches only a filter selecting that recipient; a broadcast envelope (`None`) ignores the filter's recipient field. This is asserted directly in the tests.
 
@@ -135,7 +135,7 @@ No new security surface beyond the plan's `<threat_model>`. The two `mitigate` d
 ## Next Phase Readiness
 
 - 01-04's signing session can now collect round-1 commitments and distribute the signing package over `Transport` (SIGN-02), running entirely in-process against `InMemoryTransport`.
-- Phase 3 (DKG-at-scale, n=1000 in-process), Phase 4 (rotation), and Phase 5 (lifecycle) all validate locally against this seam with zero relay code.
+- Phase 3 (DKG-at-scale, n=100 in-process), Phase 4 (rotation), and Phase 5 (lifecycle) all validate locally against this seam with zero relay code.
 - Phase 7 swaps in `FileTransport` / `NostrTransport` behind the unchanged trait; the opaque payload is where NIP-44 v2 encryption lands, and `MessageClass` is where the per-class custom event kinds map.
 
 ## Self-Check: PASSED

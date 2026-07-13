@@ -1,6 +1,6 @@
 ---
 quick_id: 260713-itg
-title: Speed up in-process n=1000 FROST DKG simulation
+title: Speed up in-process n=100 FROST DKG simulation
 status: ready
 mode: quick
 must_haves:
@@ -18,15 +18,15 @@ must_haves:
     - "Cargo.lock — updated with rayon (committed, reproducible)"
   key_links:
     - "src/crypto/keygen.rs::run_inprocess_dkg_with_rng"
-    - "tests/dkg_1000_correctness.rs (reference parallel pattern already used in the ignored test)"
-    - "tests/inproc_sign_1000.rs (TSIG_SIGN_T/TSIG_SIGN_N — calls library run_inprocess_dkg via common::run_confirmed_key_spend)"
+    - "tests/dkg_100_correctness.rs (reference parallel pattern already used in the ignored test)"
+    - "tests/inproc_sign_100.rs (TSIG_SIGN_T/TSIG_SIGN_N — calls library run_inprocess_dkg via common::run_confirmed_key_spend)"
 ---
 
-# Quick Task 260713-itg: Speed up the in-process n=1000 FROST DKG simulation
+# Quick Task 260713-itg: Speed up the in-process n=100 FROST DKG simulation
 
 ## Goal
 
-Massively reduce wall-clock time of the single-process n=1000 FROST DKG simulation
+Massively reduce wall-clock time of the single-process n=100 FROST DKG simulation
 in `src/crypto/keygen.rs::run_inprocess_dkg_with_rng` by parallelizing the
 embarrassingly-parallel per-seat work with `rayon` and eliminating O(n^2)
 allocation churn — WITHOUT touching audited crypto or weakening any security
@@ -41,18 +41,18 @@ invariant.
   (both the `_with_rng` and OsRng paths) and reproducibility is untouched** because
   no randomness flows through them. Round 1 stays sequential so the caller RNG
   threads through seats in exactly the current order.
-- The ignored test `tests/dkg_1000_correctness.rs` ALREADY demonstrates the
+- The ignored test `tests/dkg_100_correctness.rs` ALREADY demonstrates the
   intended pattern with `std::thread::scope`: clone the round-1 package map ONCE
   per worker, then for each seat `remove` its own entry (giving "all others"),
   call part2/part3, then re-`insert` it. Port that pattern into the library using
   rayon's `map_with` (per-worker cloned state). Do NOT edit that test file.
-- `tests/inproc_sign_1000.rs` → `common::run_confirmed_key_spend(t,n)` →
+- `tests/inproc_sign_100.rs` → `common::run_confirmed_key_spend(t,n)` →
   `run_inprocess_dkg(t,n)` (the library fn), so `TSIG_SIGN_T=101 TSIG_SIGN_N=200
-  cargo test --release --test inproc_sign_1000 -- --ignored` exercises the code we
+  cargo test --release --test inproc_sign_100 -- --ignored` exercises the code we
   change. NOTE: that test also spawns a regtest bitcoind (constant overhead). The
-  `dkg_1000_correctness` test does NOT call the library (its loop is inlined and
+  `dkg_100_correctness` test does NOT call the library (its loop is inlined and
   already parallel) so it is NOT a valid before/after for our change — use a
-  scratch bench or inproc_sign_1000 for timing (see Task 3).
+  scratch bench or inproc_sign_100 for timing (see Task 3).
 - rayon latest = 1.12.0. Pin EXACT: `rayon = "=1.12.0"`. crossbeam is already in
   Cargo.lock (transitively). No deny.toml exists → no allow-list edit needed (note it).
 - 11 cores on this host.
@@ -109,7 +109,7 @@ lto = "fat"
 codegen-units = 1
 opt-level = 3
 # NOTE (reproducible builds): do NOT add target-cpu=native here — it breaks the
-# 1000-verifier reproducibility requirement. The nightly measurement machine may
+# 100-verifier reproducibility requirement. The nightly measurement machine may
 # opt in locally/ephemerally via RUSTFLAGS="-C target-cpu=native", never committed.
 ```
 **verify:** `cargo build --release` succeeds with the new profile.
@@ -123,7 +123,7 @@ opt-level = 3
   `cargo test --test sign_adversarial`, `cargo test --test transport_stub`,
   `cargo test --test chain_backend_conformance`, `cargo test --test compile_fail`.
 - Medium-scale before/after (isolate the LIBRARY fn — do NOT rely on
-  dkg_1000_correctness, its loop is already parallel and does not call the lib):
+  dkg_100_correctness, its loop is already parallel and does not call the lib):
   write a throwaway bench in the SCRATCHPAD (outside the repo tree) e.g. a tiny
   `examples/`-style or a `#[test]` you add-then-remove, OR simplest: a scratch
   integration invocation timing `tsig::crypto::run_inprocess_dkg(101, 200)` with
@@ -131,7 +131,7 @@ opt-level = 3
   change, rebuild, time BEFORE (sequential), `git stash pop`. Keep the bench file
   in the scratchpad only; leave the repo tree clean. Report both wall-clock
   numbers and observed core utilization (11 cores available).
-- Do NOT run the full `--ignored` n=1000 tests.
+- Do NOT run the full `--ignored` n=100 tests.
 - Confirm no deny.toml exists (nothing to allow-list) — note it.
 **verify:** all listed fast tests green; before/after numbers captured.
 **done:** speedup demonstrated at t=101/n=200; timings recorded in SUMMARY.

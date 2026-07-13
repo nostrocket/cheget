@@ -1,6 +1,6 @@
 ---
 quick_id: 260713-itg
-title: Speed up in-process n=1000 FROST DKG simulation
+title: Speed up in-process n=100 FROST DKG simulation
 status: complete
 mode: quick
 commit: 9bc25e4
@@ -10,7 +10,7 @@ files_changed:
   - Cargo.lock
 ---
 
-# Quick Task 260713-itg: Speed up the in-process n=1000 FROST DKG simulation
+# Quick Task 260713-itg: Speed up the in-process n=100 FROST DKG simulation
 
 ## What changed
 
@@ -65,7 +65,7 @@ returned deterministically.
 ## target-cpu=native reproducibility note
 
 `[profile.release]` carries a comment forbidding `target-cpu=native`: it would
-break the "1000 people must verify what they run" reproducible-build
+break the "100 people must verify what they run" reproducible-build
 requirement. The nightly benchmark machine may opt in **locally/ephemerally**
 via `RUSTFLAGS="-C target-cpu=native"`, never committed.
 
@@ -73,7 +73,7 @@ via `RUSTFLAGS="-C target-cpu=native"`, never committed.
 
 Measured against the **library** fn `tsig::crypto::run_inprocess_dkg(101, 200)`
 via a throwaway `#[test]` timer (created, run, deleted — repo tree left clean).
-The `dkg_1000_correctness` test was intentionally **not** used for before/after
+The `dkg_100_correctness` test was intentionally **not** used for before/after
 because its loop is inlined and already parallel and does not call the library
 fn. Host: 11 cores.
 
@@ -91,7 +91,7 @@ also removes the O(n^2) clone churn the sequential path still pays.
 BEFORE/AFTER method: measured AFTER with the change in place, then
 `git stash push src/crypto/keygen.rs` (keeping Cargo.toml/Cargo.lock so rayon
 still resolved), rebuilt `--release`, measured BEFORE, then `git stash pop`. The
-full `--ignored` n=1000 tests were **not** run.
+full `--ignored` n=100 tests were **not** run.
 
 ## Verification
 

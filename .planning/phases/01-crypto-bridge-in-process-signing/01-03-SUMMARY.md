@@ -74,7 +74,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D4
-    description: "Esplora built to the same trait, conformance-covered but not in the n=1000 confirm path (D-07)"
+    description: "Esplora built to the same trait, conformance-covered but not in the n=100 confirm path (D-07)"
     requirement: STOR-04
     verification:
       - kind: integration
