@@ -4,7 +4,7 @@
 //! Reusing or persisting a FROST signing nonce across two different sighashes
 //! gives an adversary (including a malicious coordinator who observes every
 //! partial) two linear equations in the same unknowns, and the signer's
-//! long-lived share falls out. 501 extracted shares reconstruct the group key
+//! long-lived share falls out. 51 extracted shares reconstruct the group key
 //! forever. This is a *key-extraction* bug class, not a mere robustness issue
 //! (PITFALLS Pitfall 1).
 //!

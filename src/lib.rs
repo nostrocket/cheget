@@ -1,6 +1,6 @@
-//! `tsig` — 501-of-1000 FROST Taproot signing CLI.
+//! `tsig` — 51-of-100 FROST Taproot signing CLI.
 //!
-//! A single binary that lets a fixed-threshold (t=501, n=1000) group jointly
+//! A single binary that lets a fixed-threshold (t=51, n=100) group jointly
 //! control one Bitcoin Taproot address via FROST threshold Schnorr signatures
 //! (RFC 9591, secp256k1, BIP340/341 key-path spend).
 //!

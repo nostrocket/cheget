@@ -15,8 +15,8 @@ use super::CliResult;
 use crate::crypto::run_inprocess_dkg;
 
 /// The real acceptance target (D-02): threshold `t` and membership `n`.
-const FULL_THRESHOLD: u16 = 501;
-const FULL_SEATS: u16 = 1000;
+const FULL_THRESHOLD: u16 = 51;
+const FULL_SEATS: u16 = 100;
 /// Small interactive defaults for local use / TDD-speed runs (D-01).
 const SMALL_THRESHOLD: u16 = 3;
 const SMALL_SEATS: u16 = 5;
@@ -33,7 +33,7 @@ pub struct KeygenArgs {
     /// Threshold (t). Overrides the size implied by `--full`.
     #[arg(long)]
     pub threshold: Option<u16>,
-    /// Run the real acceptance target t=501, n=1000 (D-02). Without this flag a
+    /// Run the real acceptance target t=51, n=100 (D-02). Without this flag a
     /// small 3-of-5 ceremony runs for fast local use; explicit
     /// `--seats`/`--threshold` take precedence over both.
     #[arg(long, default_value_t = false)]

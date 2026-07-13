@@ -12,7 +12,7 @@
 //! * [`CoreRpcBackend`] over `bitcoincore-rpc` — fronts the confirmed key-spend path
 //!   (native regtest mining), the default backend (D-07).
 //! * [`EsploraBackend`] over `esplora-client` — built to the **same** trait and
-//!   covered by conformance tests, but not in the n=1000 confirm path (D-07).
+//!   covered by conformance tests, but not in the n=100 confirm path (D-07).
 //!
 //! The BIP341 key-spend sighash helper lives in [`sighash`]; it is the one message a
 //! FROST key-path signature commits to (SIGN-01 support).

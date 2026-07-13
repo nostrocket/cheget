@@ -7,7 +7,7 @@
 //! select exactly `t` seats and hope none drop.
 //!
 //! In-process at Phase 1 there are no real dropouts, but the session/abort
-//! semantics must exist now so Phase 7 inherits them at scale (t=501/n=1000).
+//! semantics must exist now so Phase 7 inherits them at scale (t=51/n=100).
 
 use frost_secp256k1_tr as frost;
 use frost::Identifier;

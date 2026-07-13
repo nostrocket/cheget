@@ -20,7 +20,7 @@
 ///
 /// Transport addresses seats by a plain integer so the seam stays free of both
 /// FROST and Nostr types; the session layer maps `frost::Identifier` ↔ `Seat`
-/// (and, at Phase 7, `Seat` ↔ roster npub). `u16` comfortably covers `n = 1000`.
+/// (and, at Phase 7, `Seat` ↔ roster npub). `u16` comfortably covers `n = 100`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Seat(pub u16);
 

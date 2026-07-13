@@ -2,10 +2,10 @@
 //! client-side group-key confirmation (KEY-01, KEY-02, KEY-05, KEY-06).
 //!
 //! Runs `keys::dkg::part1/2/3` across `n` simulated seats **entirely in one
-//! process** — no transport, no I/O (KEY-02). The n=1000 acceptance target
+//! process** — no transport, no I/O (KEY-02). The n=100 acceptance target
 //! (D-02) is proven correct by the `#[ignore]` `dkg_1000_correctness` test
 //! (KEY-06); this module is generic so the same code paths run at 3-of-5 for
-//! fast tests (D-01) and 501-of-1000 for the real run.
+//! fast tests (D-01) and 51-of-100 for the real run.
 //!
 //! Both output packages are normalized to even-Y via `into_even_y(None)` (D-11)
 //! so the group key is the canonical BIP340/341 Taproot **internal** key `P`
@@ -67,7 +67,7 @@ impl std::error::Error for KeygenError {}
 ///
 /// See [`run_inprocess_dkg_with_rng`] for a deterministic-RNG variant used by
 /// tests. `min_signers` is the threshold `t`; `max_signers` is the membership
-/// `n` (the real target is `t = 501`, `n = 1000` — D-02).
+/// `n` (the real target is `t = 51`, `n = 100` — D-02).
 pub fn run_inprocess_dkg(
     min_signers: u16,
     max_signers: u16,

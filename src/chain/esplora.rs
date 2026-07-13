@@ -1,7 +1,7 @@
 //! Esplora HTTP [`ChainBackend`] over `esplora-client` 0.13 (blocking API), STOR-04.
 //!
 //! Built to the **same** [`ChainBackend`] trait as [`super::core_rpc::CoreRpcBackend`]
-//! and covered by conformance tests, but per D-07 it is **not** in the n=1000 confirm
+//! and covered by conformance tests, but per D-07 it is **not** in the n=100 confirm
 //! path — Bitcoin Core fronts the confirmed key-spend. Esplora is address-indexed, so
 //! there is nothing to "import": the descriptor-import method is a documented no-op.
 

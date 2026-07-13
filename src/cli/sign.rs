@@ -25,8 +25,8 @@ use crate::session::SigningSession;
 use crate::transport::InMemoryTransport;
 
 /// The real acceptance target (D-02): threshold `t` and membership `n`.
-const FULL_THRESHOLD: u16 = 501;
-const FULL_SEATS: u16 = 1000;
+const FULL_THRESHOLD: u16 = 51;
+const FULL_SEATS: u16 = 100;
 /// Small interactive defaults for local use / fast runs (D-01).
 const SMALL_THRESHOLD: u16 = 3;
 const SMALL_SEATS: u16 = 5;
@@ -49,7 +49,7 @@ pub struct SignArgs {
     /// Threshold (t) for the in-process simulated DKG. Overrides `--full`.
     #[arg(long)]
     pub threshold: Option<u16>,
-    /// Simulate the real acceptance target t=501, n=1000 (D-02). Slow.
+    /// Simulate the real acceptance target t=51, n=100 (D-02). Slow.
     #[arg(long, default_value_t = false)]
     pub full: bool,
     /// Network for rendering the group address.

@@ -16,7 +16,7 @@ use clap::{Parser, Subcommand};
 /// Result type for CLI handlers.
 pub type CliResult = Result<(), Box<dyn std::error::Error>>;
 
-/// `tsig` — 501-of-1000 FROST Taproot signing CLI.
+/// `tsig` — 51-of-100 FROST Taproot signing CLI.
 #[derive(Debug, Parser)]
 #[command(name = "tsig", version, about, long_about = None)]
 pub struct Cli {
