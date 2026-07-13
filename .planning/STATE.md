@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-13 - Completed quick task 260713-kgv: add a readme
+Last activity: 2026-07-13 - Completed quick task 260713-kxi: rename project from tsig to cheget
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -75,7 +75,7 @@ Recent decisions affecting current work:
 - [Revision]: Local DKG-at-scale compute proof (KEY-06, Phase 3, n=100 in-process) is separated from the transport-layer relay load test (TRAN-08, Phase 7)
 - [Revision]: SEC-03 narrowed to locally-verifiable adversarial tests (mixed-epoch, nonce-reuse-won't-compile) in hardening (Phase 6); new SEC-05 (malicious-relay DoS, replayed-envelope rejection) lives in the final transport phase (Phase 7)
 - [Phase ?]: [01-01]: Canonical bridge established; x-only from_slice confined to bridge/taproot.rs; even-Y invariant rejects OddY (D-11)
-- [Phase ?]: [01-01]: Public-artifact envelope (D-09) = frost PublicKeyPackage hex in serde_json with key_id + reserved epoch; tsig address --network defaults to bitcoin
+- [Phase ?]: [01-01]: Public-artifact envelope (D-09) = frost PublicKeyPackage hex in serde_json with key_id + reserved epoch; cheget address --network defaults to bitcoin
 - [Phase ?]: [01-01]: Pinned stack committed (frost-secp256k1-tr 3.0.0, bitcoin 0.32.101); corepc-node feature 28_0; toolchain 1.96.0 / MSRV 1.85
 - [Phase 01]: [01-05]: Transport trait seam + in-memory stub (D-08); opaque-bytes Envelope shaped for Nostr event kinds; content-derived FNV-1a EnvelopeId seeds Phase-7 dedup; no nostr-sdk type in the seam
 
@@ -97,6 +97,7 @@ None yet.
 | 260713-itg | Massively speed up the in-process n=100 FROST DKG simulation (rayon-parallel rounds 2/3, O(n²) clone elimination, release-profile tuning) — ~6.6× at t=101/n=200 | 2026-07-13 | 9bc25e4 | [260713-itg-massively-speed-up-the-in-process-n-1000](./quick/260713-itg-massively-speed-up-the-in-process-n-1000/) |
 | 260713-jqs | Change fixed FROST parameters t=501/n=1000 → t=51/n=100 across the entire project (live docs, Phase-1 history, source, tests); renamed full-scale tests to `_100`, corrected #[ignore] cost language. Measured full 51/100: crown-jewel regtest key-spend 9.90s, DKG group-key proof 4.41s | 2026-07-13 | 07a0f25 | [260713-jqs-change-fixed-frost-parameters-from-t-501](./quick/260713-jqs-change-fixed-frost-parameters-from-t-501/) |
 | 260713-kgv | add a readme | 2026-07-13 | 8858b36 | [260713-kgv-add-a-readme](./quick/260713-kgv-add-a-readme/) |
+| 260713-kxi | rename project from tsig to cheget (crate, binary, lib, `CHEGET_*` env prefix, and all prose incl. completed planning history) | 2026-07-13 | f1c14c1 | [260713-kxi-rename-project-from-tsig-to-cheget](./quick/260713-kxi-rename-project-from-tsig-to-cheget/) |
 
 ## Deferred Items
 
