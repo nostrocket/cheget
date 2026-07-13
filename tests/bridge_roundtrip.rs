@@ -3,7 +3,7 @@
 //! Pins the bridge to the official BIP341/BIP86 published vectors by asserting a
 //! HARD-CODED expected P2TR address string (never merely "it runs"), for BOTH an
 //! even-Y and an odd-Y-origin key (D-10/D-11). Also proves KEY-04: the
-//! `tsig address --pubkey <file>` path reads a public-artifact envelope and prints
+//! `cheget address --pubkey <file>` path reads a public-artifact envelope and prints
 //! the same address the KAT pins.
 
 use std::collections::BTreeMap;
@@ -13,8 +13,8 @@ use frost_secp256k1_tr as frost;
 use frost::keys::EvenY;
 use serde::Deserialize;
 
-use tsig::bridge::{address_from_group_key, BridgeError};
-use tsig::cli::address::{self, Network, PubkeyEnvelope};
+use cheget::bridge::{address_from_group_key, BridgeError};
+use cheget::cli::address::{self, Network, PubkeyEnvelope};
 
 #[derive(Debug, Deserialize)]
 struct Fixture {
@@ -105,7 +105,7 @@ fn odd_y_origin_is_rejected_then_normalizes_to_published_address() {
     assert_eq!(&addr.to_string(), expected, "{}", v.name);
 }
 
-/// KEY-04: `tsig address --pubkey <file>` reads a public-artifact envelope
+/// KEY-04: `cheget address --pubkey <file>` reads a public-artifact envelope
 /// carrying a `PublicKeyPackage` and prints the SAME address the KAT pins.
 #[test]
 fn address_command_reads_pubkey_file_and_prints_vector_address() {
@@ -127,7 +127,7 @@ fn address_command_reads_pubkey_file_and_prints_vector_address() {
     let envelope =
         PubkeyEnvelope::from_package("test-key", 0, &pkg).expect("envelope encodes");
 
-    let dir = std::env::temp_dir().join(format!("tsig-kat-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("cheget-kat-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("pubkey.json");
     std::fs::write(&path, serde_json::to_vec_pretty(&envelope).unwrap()).unwrap();

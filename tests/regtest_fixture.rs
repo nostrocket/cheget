@@ -1,6 +1,6 @@
 //! Auto-spawned regtest fixture + broadcast/confirm smoke test (D-05).
 //!
-//! Proves the `corepc-node` auto-spawn + [`tsig::chain::CoreRpcBackend`] can
+//! Proves the `corepc-node` auto-spawn + [`cheget::chain::CoreRpcBackend`] can
 //! fund, watch, broadcast, and confirm — the chain half of the eventual n=100
 //! confirmed key-spend (the FROST signing half lands in 01-04, which reuses
 //! `spawn_regtest` from `tests/common`). No `bitcoind` need be installed; no
@@ -18,7 +18,7 @@ use std::str::FromStr;
 use bitcoin::secp256k1::{Secp256k1, SecretKey};
 use bitcoin::{Address, Amount, KnownHrp};
 use bitcoincore_rpc::RpcApi;
-use tsig::chain::ChainBackend;
+use cheget::chain::ChainBackend;
 
 /// A deterministic, valid regtest P2TR (BIP86 key-path) address plus the x-only
 /// internal key it commits to — the same key we hand to `import_tr_descriptor`

@@ -1,4 +1,4 @@
-//! `tsig` — 51-of-100 FROST Taproot signing CLI.
+//! `cheget` — 51-of-100 FROST Taproot signing CLI.
 //!
 //! A single binary that lets a fixed-threshold (t=51, n=100) group jointly
 //! control one Bitcoin Taproot address via FROST threshold Schnorr signatures

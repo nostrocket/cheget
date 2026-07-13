@@ -3,7 +3,7 @@
 //! Phase 1 runs the whole `(t, n)` DKG in one process (no transport) and writes
 //! only the **public** `PublicKeyPackage` envelope to disk (D-09); the secret
 //! shares live in this process for the duration of the run and are never
-//! serialized. The written artifact is exactly what `tsig watcher address
+//! serialized. The written artifact is exactly what `cheget watcher address
 //! --pubkey <file>` consumes (KEY-04).
 
 use std::path::PathBuf;

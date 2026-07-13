@@ -33,12 +33,12 @@ use frost::Identifier;
 #[ignore = "n=100 O(n^2) DKG — nightly/on-demand only (D-06); run with --release --ignored --nocapture"]
 fn dkg_100_all_shares_verify_to_one_group_key() {
     // Defaults to the mandated acceptance target t=51, n=100 (D-02). The scale
-    // is overridable via TSIG_DKG_T / TSIG_DKG_N so the same instrumented loop
+    // is overridable via CHEGET_DKG_T / CHEGET_DKG_N so the same instrumented loop
     // can capture O(n^2) scaling data points at smaller, faster-completing sizes
     // (the DKG code is generic over (t, n) per D-01). At n=100 the full run is
     // an on-demand job (see Task 5 for the measured wall-clock), not the PR gate.
-    let max_signers: u16 = env_u16("TSIG_DKG_N", 100);
-    let min_signers: u16 = env_u16("TSIG_DKG_T", 51);
+    let max_signers: u16 = env_u16("CHEGET_DKG_N", 100);
+    let min_signers: u16 = env_u16("CHEGET_DKG_T", 51);
     assert!(
         min_signers >= 1 && min_signers <= max_signers,
         "require 1 <= t ({min_signers}) <= n ({max_signers})"

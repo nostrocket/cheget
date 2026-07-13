@@ -18,7 +18,7 @@ use std::thread;
 
 use bitcoin::secp256k1::{Secp256k1, SecretKey};
 use bitcoin::{Address, KnownHrp, Transaction, Txid, XOnlyPublicKey};
-use tsig::chain::{ChainBackend, EsploraBackend};
+use cheget::chain::{ChainBackend, EsploraBackend};
 
 /// A fixed, valid txid the mock Esplora server pretends to have broadcast/confirmed.
 const MOCK_TXID: &str = "1111111111111111111111111111111111111111111111111111111111111111";

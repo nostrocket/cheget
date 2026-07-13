@@ -298,6 +298,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "cheget"
+version = "0.1.0"
+dependencies = [
+ "bitcoin",
+ "bitcoincore-rpc",
+ "clap",
+ "corepc-node",
+ "esplora-client",
+ "frost-secp256k1-tr",
+ "rayon",
+ "serde",
+ "serde_json",
+ "trybuild",
+ "zeroize",
+]
+
+[[package]]
 name = "clap"
 version = "4.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1412,23 +1429,6 @@ dependencies = [
  "target-triple",
  "termcolor",
  "toml",
-]
-
-[[package]]
-name = "tsig"
-version = "0.1.0"
-dependencies = [
- "bitcoin",
- "bitcoincore-rpc",
- "clap",
- "corepc-node",
- "esplora-client",
- "frost-secp256k1-tr",
- "rayon",
- "serde",
- "serde_json",
- "trybuild",
- "zeroize",
 ]
 
 [[package]]

@@ -4,7 +4,7 @@
 //! features) and spawns a throwaway regtest `bitcoind` on a temp datadir with a
 //! free port, then wires:
 //!
-//! * a `tsig` [`CoreRpcBackend`] to a **dedicated watch-only wallet** (private
+//! * a `cheget` [`CoreRpcBackend`] to a **dedicated watch-only wallet** (private
 //!   keys disabled) — the production surface: the group's `tr()` descriptor is
 //!   watch-only, and Core refuses to import a keyless descriptor into a wallet
 //!   that holds private keys; and
@@ -28,11 +28,11 @@ use bitcoin::{
 };
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use corepc_node::Node;
-use tsig::bridge::{address_from_group_key, internal_key_xonly};
-use tsig::chain::{ChainBackend, CoreRpcBackend};
-use tsig::crypto::run_inprocess_dkg;
-use tsig::session::SigningSession;
-use tsig::transport::InMemoryTransport;
+use cheget::bridge::{address_from_group_key, internal_key_xonly};
+use cheget::chain::{ChainBackend, CoreRpcBackend};
+use cheget::crypto::run_inprocess_dkg;
+use cheget::session::SigningSession;
+use cheget::transport::InMemoryTransport;
 
 /// A live regtest node plus the two clients a chain test needs.
 pub struct RegtestFixture {

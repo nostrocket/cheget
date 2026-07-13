@@ -25,13 +25,13 @@ use bitcoin::{
 use frost_secp256k1_tr as frost;
 use frost::{Identifier, SigningPackage};
 
-use tsig::bridge::address_from_group_key;
-use tsig::crypto::sign::{aggregate, verify_against_q, AggregateError};
-use tsig::crypto::{run_inprocess_dkg, EphemeralNonces};
-use tsig::session::display::{display_and_ack, DisplayError};
-use tsig::session::liveness::{over_provisioned_poll_size, poll_and_select, LivenessError};
-use tsig::session::SigningSession;
-use tsig::transport::InMemoryTransport;
+use cheget::bridge::address_from_group_key;
+use cheget::crypto::sign::{aggregate, verify_against_q, AggregateError};
+use cheget::crypto::{run_inprocess_dkg, EphemeralNonces};
+use cheget::session::display::{display_and_ack, DisplayError};
+use cheget::session::liveness::{over_provisioned_poll_size, poll_and_select, LivenessError};
+use cheget::session::SigningSession;
+use cheget::transport::InMemoryTransport;
 
 /// Build a self-consistent PSBT that spends a single (synthetic) output paying to
 /// the group's own P2TR address, back to the same address minus a fee. Returns

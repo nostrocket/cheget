@@ -23,11 +23,11 @@ use bitcoin::{
 };
 use frost_secp256k1_tr as frost;
 
-use tsig::bridge::address_from_group_key;
-use tsig::crypto::run_inprocess_dkg;
-use tsig::session::display::{display_and_ack, DisplayError};
-use tsig::session::{SessionError, SigningSession};
-use tsig::transport::InMemoryTransport;
+use cheget::bridge::address_from_group_key;
+use cheget::crypto::run_inprocess_dkg;
+use cheget::session::display::{display_and_ack, DisplayError};
+use cheget::session::{SessionError, SigningSession};
+use cheget::transport::InMemoryTransport;
 
 /// A self-consistent PSBT spending a synthetic output paying to the group
 /// address back to itself minus a fee — no live chain needed (the sighash is a
