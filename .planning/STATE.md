@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-13 - Completed quick task 260713-kxi: rename project from tsig to cheget
+Last activity: 2026-07-13 - Completed quick task 260713-pk2: update README with mainnet and regtest usage, fully current
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -98,6 +98,7 @@ None yet.
 | 260713-jqs | Change fixed FROST parameters t=501/n=1000 → t=51/n=100 across the entire project (live docs, Phase-1 history, source, tests); renamed full-scale tests to `_100`, corrected #[ignore] cost language. Measured full 51/100: crown-jewel regtest key-spend 9.90s, DKG group-key proof 4.41s | 2026-07-13 | 07a0f25 | [260713-jqs-change-fixed-frost-parameters-from-t-501](./quick/260713-jqs-change-fixed-frost-parameters-from-t-501/) |
 | 260713-kgv | add a readme | 2026-07-13 | 8858b36 | [260713-kgv-add-a-readme](./quick/260713-kgv-add-a-readme/) |
 | 260713-kxi | rename project from tsig to cheget (crate, binary, lib, `CHEGET_*` env prefix, and all prose incl. completed planning history) | 2026-07-13 | f1c14c1 | [260713-kxi-rename-project-from-tsig-to-cheget](./quick/260713-kxi-rename-project-from-tsig-to-cheget/) |
+| 260713-pk2 | update README with mainnet and regtest usage, fully current (documented real verified CLI surface; added regtest/mainnet sections; corrected stale keygen/sign and #[ignore] claims) | 2026-07-13 | df44fbb | [260713-pk2-update-readme-with-mainnet-and-regtest-u](./quick/260713-pk2-update-readme-with-mainnet-and-regtest-u/) |
 
 ## Deferred Items
 
