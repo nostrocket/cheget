@@ -2,19 +2,19 @@
 
 ## Project
 
-**tsig — 501-of-1000 FROST Taproot Signing CLI**
+**tsig — 51-of-100 FROST Taproot Signing CLI**
 
-`tsig` is a single-binary Rust command-line tool that lets a fixed-threshold, large-membership group (501-of-1000) jointly control one Bitcoin Taproot address using FROST threshold Schnorr signatures (RFC 9591, secp256k1, BIP340/341 key-path spend). On-chain, its spends are indistinguishable from single-sig. Three personae — participant, coordinator, watcher — are selected by subcommand. It supports membership rotation with zero on-chain footprint and true revocation via an on-chain sweep to a pre-generated standby key.
+`tsig` is a single-binary Rust command-line tool that lets a fixed-threshold, large-membership group (51-of-100) jointly control one Bitcoin Taproot address using FROST threshold Schnorr signatures (RFC 9591, secp256k1, BIP340/341 key-path spend). On-chain, its spends are indistinguishable from single-sig. Three personae — participant, coordinator, watcher — are selected by subcommand. It supports membership rotation with zero on-chain footprint and true revocation via an on-chain sweep to a pre-generated standby key.
 
-**Core Value:** A group of 1000 can jointly control a single Bitcoin address such that (a) any 501 can spend, (b) no individual ever holds the key, (c) membership can rotate without touching the chain or changing the address, and (d) past compromise is truly revocable by sweeping to a standby key. If everything else fails, the frost↔rust-bitcoin bridge must produce a valid BIP340 key-spend signature over the correct sighash.
+**Core Value:** A group of 100 can jointly control a single Bitcoin address such that (a) any 51 can spend, (b) no individual ever holds the key, (c) membership can rotate without touching the chain or changing the address, and (d) past compromise is truly revocable by sweeping to a standby key. If everything else fails, the frost↔rust-bitcoin bridge must produce a valid BIP340 key-spend signature over the correct sighash.
 
 ### Constraints
 
 - **Tech stack**: Rust — `frost-secp256k1-tr` ≥3.0 (+`frost-core`, `serialization`), `bitcoin` (rust-bitcoin), `bitcoincore-rpc`/`esplora-client`, `nostr-sdk` (NIP-44/42/59), `age`+`zeroize`, `clap` 4, `serde`/`serde_json`/`toml`, `rusqlite`. — the audited/canonical path for each concern.
 - **Security**: Nonce discipline is the highest-severity implementation rule — nonces never persisted. Nostr identity keys are transport-only, independently generated, never derived from or reused as FROST material (both live on secp256k1). Same-key check after every refresh is mandatory and client-side.
-- **Fixed parameters**: `t = 501`, `n = 1000`; threshold never changes.
-- **Transport / ops**: Operators MUST run ≥3 dedicated relays (strfry / nostr-rs-relay), NIP-42 AUTH to roster npubs; ceremonies generate ~10⁶ events (~1 GB) — never point at a public relay. Offline file mode is a first-class fallback.
-- **Verifiability**: reproducible builds required — 1000 people must be able to verify what they run; library versions pinned; `cargo audit`/`cargo deny` in CI.
+- **Fixed parameters**: `t = 51`, `n = 100`; threshold never changes.
+- **Transport / ops**: Operators MUST run ≥3 dedicated relays (strfry / nostr-rs-relay), NIP-42 AUTH to roster npubs; ceremonies generate on the order of ~10⁴ events (~10 MB) — order-of-magnitude estimate, scaling as O(n²) at n=100 — never point at a public relay. Offline file mode is a first-class fallback.
+- **Verifiability**: reproducible builds required — 100 people must be able to verify what they run; library versions pinned; `cargo audit`/`cargo deny` in CI.
 
 <!-- GSD:project-end -->
 
@@ -54,7 +54,7 @@
 |------|---------|-------|
 | `cargo audit` | RUSTSEC advisory scan | Required by SPEC §11.8; run in CI. |
 | `cargo deny` | License + duplicate-dep + advisory gate | Also flags the expected duplicate `secp256k1` (see compat notes) so you can allow-list it deliberately. |
-| `Cargo.lock` committed | Pinned, reproducible builds | Mandatory — "1000 people must verify what they run" (SPEC §11.8). MSRV floor is **Rust 1.85** (driven by `toml` 1.1.x; `frost-core` needs only 1.81). |
+| `Cargo.lock` committed | Pinned, reproducible builds | Mandatory — "100 people must verify what they run" (SPEC §11.8). MSRV floor is **Rust 1.85** (driven by `toml` 1.1.x; `frost-core` needs only 1.81). |
 
 ## FROST API surface — confirmed present at `frost-secp256k1-tr` 3.0.0
 
@@ -72,7 +72,7 @@
 ### FROST 3.0 breaking changes vs 2.x (what the roadmap must account for)
 
 - **Renames (already reflected in the SPEC):** `refresh_dkg_part_1` → `refresh_dkg_part1`; `repair_share_step_1/2/3` → `repair_share_part1/2/3`. The SPEC uses the new names — no action.
-- **Cheater detection is now default behavior**, not a feature flag. `aggregate()` / `aggregate_with_tweak()` identify malicious shares automatically and return culprits; opt out only via `aggregate_custom(..., CheaterDetection::Disabled)`. Beneficial at t=501 — keep it on.
+- **Cheater detection is now default behavior**, not a feature flag. `aggregate()` / `aggregate_with_tweak()` identify malicious shares automatically and return culprits; opt out only via `aggregate_custom(..., CheaterDetection::Disabled)`. Beneficial at t=51 — keep it on.
 - **`Error::culprit()` → `culprits()`** returning a `Vec<Identifier>` (and `InvalidSignatureShare::culprit` → `culprits`). Error-handling code must expect multiple culprits.
 - **`PublicKeyPackage::new()` now requires a `min_signers` argument.** Relevant if you reconstruct packages manually.
 - **`SigningKey` is no longer `Copy` and now `ZeroizeOnDrop`.** Aligns with the SPEC's hygiene goals; adjust any code that assumed `Copy`.
@@ -112,7 +112,7 @@
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
 | `secp256kfun` / `schnorr_fun` | Excellent but primitives-level; you would reimplement DKG, refresh, repair, and the audited packaging yourself | `frost-secp256k1-tr` 3.0.0 (audited, packaged) |
-| `tss-lib` / any ECDSA threshold stack | Wrong signature type (ECDSA, not Schnorr/BIP340) — cannot produce a Taproot key-path spend; also infeasible at n=1000 | `frost-secp256k1-tr` (Schnorr, BIP340/341) |
+| `tss-lib` / any ECDSA threshold stack | Wrong signature type (ECDSA, not Schnorr/BIP340) — cannot produce a Taproot key-path spend; also infeasible at n=100 | `frost-secp256k1-tr` (Schnorr, BIP340/341) |
 | `luxfi/threshold` | Stub-quality per companion research (`implementations-resharing.md` §3.6); unaudited | `frost-secp256k1-tr` |
 | `bitcoin 0.33.0-beta` | Pre-release; unsupported by `bitcoincore-rpc` / `esplora-client` | `bitcoin 0.32.101` (stable) |
 | `nostr-sdk 0.45.0-alpha.*` | Alpha; unstable API | `nostr-sdk 0.44.1` (stable) |

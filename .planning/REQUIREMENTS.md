@@ -1,7 +1,7 @@
 # Requirements: tsig
 
 **Defined:** 2026-07-10
-**Core Value:** A group of 1000 can jointly control one Bitcoin address (any 501 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
+**Core Value:** A group of 100 can jointly control one Bitcoin address (any 51 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
 
 ## v1 Requirements
 
@@ -14,12 +14,12 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [x] **KEY-03**: A byte-level round-trip test pins the frost→rust-bitcoin key bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness
 - [x] **KEY-04**: `tsig address [--key active|standby]` prints the BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across all refresh epochs
 - [x] **KEY-05**: Each participant confirms the group verifying key to the coordinator after keygen; any mismatch aborts the ceremony
-- [x] **KEY-06**: DKG generates the full n=1000 share set in-process on a single host with no transport, producing 1000 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test)
+- [x] **KEY-06**: DKG generates the full n=100 share set in-process on a single host with no transport, producing 100 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test)
 
 ### Signing (SIGN)
 
 - [x] **SIGN-01**: Coordinator can run a signing session from a PSBT (`tsig session sign --psbt <file> [--key active]`), computing the BIP341 key-spend sighash per input (`SighashCache::taproot_key_spend_signature_hash`, default sighash type)
-- [x] **SIGN-02**: Coordinator selects 501 live participants via liveness poll and runs FROST round 1 (`round1::commit`) collecting `SigningCommitments`
+- [x] **SIGN-02**: Coordinator selects 51 live participants via liveness poll and runs FROST round 1 (`round1::commit`) collecting `SigningCommitments`
 - [x] **SIGN-03**: Participants run round 2 (`round2::sign_with_tweak`); coordinator aggregates with the taproot tweak (`aggregate_with_tweak(…, merkle_root: None)`) into a 64-byte BIP340 signature
 - [x] **SIGN-04**: Coordinator verifies the aggregated BIP340 signature against the output key `Q`, finalizes the PSBT, and prints the raw tx (broadcast is operator-driven or `--broadcast` via the configured node)
 - [x] **SIGN-05**: Signing nonces live in memory only and are represented by a type that cannot be serialized/persisted; any session restart generates fresh nonces (structural prevention of nonce-reuse key extraction)
@@ -35,14 +35,14 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [ ] **TRAN-05**: The roster is a pinned set of npubs whose hash is committed in every ceremony-open event and verified by all clients
 - [ ] **TRAN-06**: Ceremonies are resumable and idempotent per `(ceremony_id, round, seat)` via event-id dedup; round-2 events are published in paced batches
 - [ ] **TRAN-07**: Every `join`/`help` command supports offline file mode (`--in <dir> --out <dir>`) carrying the same signed-event JSON on removable media, behind the same transport interface as Nostr
-- [ ] **TRAN-08**: A containerized n=1000 DKG load test validates relay rate-limit/retention tuning and paced batching against self-hosted strfry (~10⁶ events / ~1 GB per ceremony)
+- [ ] **TRAN-08**: A containerized n=100 DKG load test validates relay rate-limit/retention tuning and paced batching against self-hosted strfry (~10⁴ events / ~10 MB per ceremony)
 
 ### Rotation (ROT)
 
 - [ ] **ROT-01**: Coordinator can run a refresh (`tsig ceremony refresh --remove <ids> [--key active|standby]`) using refresh-DKG (`refresh_dkg_part1/part2/refresh_dkg_shares`), removing any identifier not included, with all remaining holders participating
 - [ ] **ROT-02**: Every participant verifies, client-side, that the new `PublicKeyPackage` verifying key equals the old one after refresh; mismatch aborts and discards the new share (never trust the coordinator's word)
 - [ ] **ROT-03**: Coordinator can enroll a new member (`tsig ceremony enroll --seat <id> --new-member <pubkey>`) via repair/RTS (`repairable::repair_share_part1/2/3`) against a fresh identifier, immediately followed by a refresh in the same ceremony window (proactivizing helper knowledge)
-- [ ] **ROT-04**: Coordinator can repair a lost share for an existing seat (`tsig ceremony repair --seat <id>`) with ≥501 helpers, and the recovering member verifies against the group `PublicKeyPackage`
+- [ ] **ROT-04**: Coordinator can repair a lost share for an existing seat (`tsig ceremony repair --seat <id>`) with ≥51 helpers, and the recovering member verifies against the group `PublicKeyPackage`
 - [ ] **ROT-05**: Every completed refresh/enroll increments `epoch`; share files are tagged `(key_id, epoch, identifier)`; signing sessions bind `(key_id, epoch)` and reject mixed-epoch shares early with a clear error
 - [ ] **ROT-06**: `tsig share status` lists held shares (key_id, epoch, state); at steady state each participant holds exactly two — one ACTIVE, one STANDBY
 
@@ -81,7 +81,7 @@ Acknowledged but deferred; not in the current roadmap.
 ### Privacy & Robustness
 
 - **PRIV-01**: Optional NIP-59 gift-wrapping of directed events for roster/metadata privacy from relay observers (not required for key security)
-- **ROBU-01**: ROAST-style robust signing wrapper to tolerate participant dropout at 501-of-1000 without full session restart (quantify dropout impact via an M2 spike first)
+- **ROBU-01**: ROAST-style robust signing wrapper to tolerate participant dropout at 51-of-100 without full session restart (quantify dropout impact via an M2 spike first)
 - **CHAIN-01**: Maintained replacement/fork for the stale `bitcoincore-rpc` client if it falls behind rust-bitcoin releases
 
 ## Out of Scope
@@ -95,7 +95,7 @@ Explicitly excluded, per SPEC non-goals. Documented to prevent scope creep.
 | Verifiable erasure / remote attestation of share deletion | Assumed impossible on member hardware; no security claim rests on local deletion — the sweep is the revocation |
 | Script-path (tapscript) spends | Design is key-only P2TR (merkle root `None`); breaks single-sig indistinguishability |
 | Multi-address wallet management / coin selection beyond consolidation | Out of the single-address model; only sweep consolidation is needed |
-| ECDSA of any kind | Wrong signature type for Taproot key-spend; infeasible at n=1000 |
+| ECDSA of any kind | Wrong signature type for Taproot key-spend; infeasible at n=100 |
 | `secp256kfun`/`schnorr_fun`, tss-lib, luxfi/threshold | Primitives-level, wrong-scheme, or stub code — `frost-secp256k1-tr` is the audited packaged path |
 
 ## Traceability

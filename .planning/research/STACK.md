@@ -41,7 +41,7 @@ The SPEC §12 stack is **correct and current**. Every claimed `frost-secp256k1-t
 |------|---------|-------|
 | `cargo audit` | RUSTSEC advisory scan | Required by SPEC §11.8; run in CI. |
 | `cargo deny` | License + duplicate-dep + advisory gate | Also flags the expected duplicate `secp256k1` (see compat notes) so you can allow-list it deliberately. |
-| `Cargo.lock` committed | Pinned, reproducible builds | Mandatory — "1000 people must verify what they run" (SPEC §11.8). MSRV floor is **Rust 1.85** (driven by `toml` 1.1.x; `frost-core` needs only 1.81). |
+| `Cargo.lock` committed | Pinned, reproducible builds | Mandatory — "100 people must verify what they run" (SPEC §11.8). MSRV floor is **Rust 1.85** (driven by `toml` 1.1.x; `frost-core` needs only 1.81). |
 
 ## FROST API surface — confirmed present at `frost-secp256k1-tr` 3.0.0
 
@@ -65,7 +65,7 @@ MSRV 1.81, edition 2021. Dependencies: `frost-core ^3.0`, `frost-rerandomized ^3
 Verified from the upstream `frost-core` CHANGELOG:
 
 - **Renames (already reflected in the SPEC):** `refresh_dkg_part_1` → `refresh_dkg_part1`; `repair_share_step_1/2/3` → `repair_share_part1/2/3`. The SPEC uses the new names — no action.
-- **Cheater detection is now default behavior**, not a feature flag. `aggregate()` / `aggregate_with_tweak()` identify malicious shares automatically and return culprits; opt out only via `aggregate_custom(..., CheaterDetection::Disabled)`. Beneficial at t=501 — keep it on.
+- **Cheater detection is now default behavior**, not a feature flag. `aggregate()` / `aggregate_with_tweak()` identify malicious shares automatically and return culprits; opt out only via `aggregate_custom(..., CheaterDetection::Disabled)`. Beneficial at t=51 — keep it on.
 - **`Error::culprit()` → `culprits()`** returning a `Vec<Identifier>` (and `InvalidSignatureShare::culprit` → `culprits`). Error-handling code must expect multiple culprits.
 - **`PublicKeyPackage::new()` now requires a `min_signers` argument.** Relevant if you reconstruct packages manually.
 - **`SigningKey` is no longer `Copy` and now `ZeroizeOnDrop`.** Aligns with the SPEC's hygiene goals; adjust any code that assumed `Copy`.
@@ -109,7 +109,7 @@ Enable at minimum `nip44` and `nip59` (or `all-nips`). NIP-42 needs no feature f
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
 | `secp256kfun` / `schnorr_fun` | Excellent but primitives-level; you would reimplement DKG, refresh, repair, and the audited packaging yourself | `frost-secp256k1-tr` 3.0.0 (audited, packaged) |
-| `tss-lib` / any ECDSA threshold stack | Wrong signature type (ECDSA, not Schnorr/BIP340) — cannot produce a Taproot key-path spend; also infeasible at n=1000 | `frost-secp256k1-tr` (Schnorr, BIP340/341) |
+| `tss-lib` / any ECDSA threshold stack | Wrong signature type (ECDSA, not Schnorr/BIP340) — cannot produce a Taproot key-path spend; also infeasible at n=100 | `frost-secp256k1-tr` (Schnorr, BIP340/341) |
 | `luxfi/threshold` | Stub-quality per companion research (`implementations-resharing.md` §3.6); unaudited | `frost-secp256k1-tr` |
 | `bitcoin 0.33.0-beta` | Pre-release; unsupported by `bitcoincore-rpc` / `esplora-client` | `bitcoin 0.32.101` (stable) |
 | `nostr-sdk 0.45.0-alpha.*` | Alpha; unstable API | `nostr-sdk 0.44.1` (stable) |

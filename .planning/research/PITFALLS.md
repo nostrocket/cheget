@@ -1,6 +1,6 @@
 # Pitfalls Research
 
-**Domain:** FROST threshold Schnorr (RFC 9591 / BIP340) + Bitcoin Taproot key-path + Nostr transport, at t=501/n=1000
+**Domain:** FROST threshold Schnorr (RFC 9591 / BIP340) + Bitcoin Taproot key-path + Nostr transport, at t=51/n=100
 **Researched:** 2026-07-10
 **Confidence:** HIGH (spec-derived + curated threshold-signature failure-mode literature in-repo)
 
@@ -26,7 +26,7 @@ pair `(dᵢ, eᵢ)` is the *only* secret masking the long-term share `dᵢ`. If 
 committed nonce pair is ever used to sign **two different messages** (two different
 sighashes, i.e. two different challenges `e`), the adversary — including a malicious
 coordinator, who legitimately sees every `sᵢ` — has two linear equations in the same
-unknowns and solves directly for the share `dᵢ`. Collect 501 extracted shares from one
+unknowns and solves directly for the share `dᵢ`. Collect 51 extracted shares from one
 epoch and the group key is reconstructed forever. This is not a theoretical edge: it is the
 single documented "reset/replay" catastrophe of randomized two-round FROST (scheme survey
 §7; Arctic's entire motivation, §3.15).
@@ -58,7 +58,7 @@ like everything else" — is exactly the bug.
   share a "resumable round state" trait between them.
 - **New session on any restart or timeout.** A session identifier is minted fresh; a
   restarted/timed-out session is a **new** session with freshly generated nonces and a
-  possibly different 501-subset. Never a resume (SPEC §6.5.5).
+  possibly different 51-subset. Never a resume (SPEC §6.5.5).
 - **Bind the nonce lifetime to the process.** Generate in round 1, consume in round 2,
   drop (zeroize) immediately after producing `sᵢ`. No field, cache, or map outlives the
   single round-2 call.
@@ -129,7 +129,7 @@ don't hand-roll" (scheme survey §7).
 - **One canonical bridge function, one canonical sighash function.** Exactly one place
   converts key→address and exactly one computes the sighash from a PSBT. Everything else
   calls those. No ad-hoc `XOnlyPublicKey::from_slice` scattered around.
-- **Sign a real regtest key-spend in M1** with 501 in-process simulated participants and
+- **Sign a real regtest key-spend in M1** with 51 in-process simulated participants and
   broadcast it — the only test that proves all four strands simultaneously.
 - **Known-answer regression vectors** committed to the repo so a dependency bump can't
   silently shift the convention.
@@ -158,8 +158,8 @@ from epoch-`k+1` shares, the Lagrange interpolation is over inconsistent points 
 aggregate signature is **garbage** — it will not verify under `Q`. Worse failure modes:
 - The library may fail with an opaque internal error, or
 - A stale share file from a prior epoch is loaded by a participant who didn't complete the
-  last refresh, and they silently contribute a doomed partial, aborting the whole 501-way
-  session with no clear culprit — a liveness disaster at n=1000.
+  last refresh, and they silently contribute a doomed partial, aborting the whole 51-way
+  session with no clear culprit — a liveness disaster at n=100.
 
 **Why it happens:**
 At steady state every participant holds **two shares** (ACTIVE + STANDBY, SPEC §4), and
@@ -376,15 +376,15 @@ a unit test that verifies against the internal key, hiding the bug until a real 
 FROST partial signing signs whatever challenge `e = H(R, Q, m)` the coordinator's
 `SigningPackage` implies. If participants sign the *message/sighash the coordinator hands
 them* without independently recomputing it from the PSBT, a **compromised coordinator can
-get a 501-quorum to blind-sign an arbitrary transaction** — draining all funds to an
-attacker address — while showing each participant a benign summary. At n=1000 the whole
+get a 51-quorum to blind-sign an arbitrary transaction** — draining all funds to an
+attacker address — while showing each participant a benign summary. At n=100 the whole
 security story rests on "no single party holds the key," but blind signing hands the
 coordinator effective unilateral control (SPEC §11.7). This is the highest-value attack on
 the running system after nonce reuse.
 
 **Why it happens:**
 It is dramatically easier to have the coordinator compute the sighash once and distribute
-it — recomputing per input from the PSBT on 501 devices is more code and more UX friction.
+it — recomputing per input from the PSBT on 51 devices is more code and more UX friction.
 The `--yes` flag and "just sign it" pressure at ceremony scale push toward blind signing.
 
 **How to avoid (structural):**
@@ -419,13 +419,13 @@ flow is far more error-prone.
 ### Pitfall 9: Treating share deletion as a security control (it is not — the sweep is)
 
 **What goes wrong:**
-The residual risk of this entire design is stark and normative: **501 shares from any one
+The residual risk of this entire design is stark and normative: **51 shares from any one
 past epoch reconstruct the key forever** (SPEC §11.1). If the team (or the docs, or the
 operators) come to believe that deleting old shares after refresh *revokes* the compromised
 holders, they will under-invest in the sweep machinery and over-trust rotation. A retained
 insider who simply *kept* their epoch-`k` share is untouched by any amount of refreshing —
 refresh only defends against *external gradual* compromise (an adversary who must
-re-compromise devices each epoch). The moment a compromise coalition of 501-in-one-epoch is
+re-compromise devices each epoch). The moment a compromise coalition of 51-in-one-epoch is
 plausible, only an **on-chain sweep to the standby key** actually protects the funds.
 
 **Why it happens:**
@@ -460,19 +460,19 @@ deliverables, SPEC §13.4).
 
 ---
 
-### Pitfall 10: Pointing an n=1000 ceremony at a public relay (bans, rate limits, retention loss, non-resumable at scale)
+### Pitfall 10: Pointing an n=100 ceremony at a public relay (bans, rate limits, retention loss, non-resumable at scale)
 
 **What goes wrong:**
-A DKG/refresh at n=1000 is O(n²): round 2 alone is ~999 directed packages **per sender**,
-≈10⁶ events, ≈1 GB per ceremony (SPEC §8). Pointing that at a public Nostr relay gets the
+A DKG/refresh at n=100 is O(n²): round 2 alone is ~99 directed packages **per sender**,
+≈10⁴ events, ≈10 MB per ceremony (SPEC §8). Pointing that at a public Nostr relay gets the
 whole roster **rate-limited or IP-banned mid-round**, and the ceremony stalls with partial
 state scattered across relays. Related scale failures:
-- **Retention misconfig:** a relay that prunes events (default retention) before all 1000
+- **Retention misconfig:** a relay that prunes events (default retention) before all 100
   participants have fetched their directed packages loses share deltas — participants can't
   complete `dkg::part3`, and the ceremony is stuck.
 - **Rate-limit self-DoS:** even self-hosted relays with default limits throttle the
-  round-2 burst; clients that publish 999 events in a tight loop trip the limiter.
-- **Non-resumable ceremonies:** at 10⁶ events, *any* interruption (relay restart, network
+  round-2 burst; clients that publish 99 events in a tight loop trip the limiter.
+- **Non-resumable ceremonies:** at 10⁴ events, *any* interruption (relay restart, network
   blip, a participant's laptop closing) is near-certain over the ceremony's wall-clock. If
   the ceremony can't resume idempotently from where it stopped, it must restart from
   scratch — and at this scale a from-scratch restart may never converge.
@@ -489,13 +489,13 @@ bursts.
   public relay for ceremonies (SPEC §7, §11, Constraints). Public relays may carry only
   low-volume session-control/sweep events as extra redundancy.
 - **Relay configs explicitly raise rate limits and retention** for the ceremony event kinds
-  before any n=1000 run; document the required strfry settings as part of operator setup
+  before any n=100 run; document the required strfry settings as part of operator setup
   (SPEC §8).
-- **Clients publish round-2 in paced batches**, not a 999-event burst (SPEC §8).
+- **Clients publish round-2 in paced batches**, not a 99-event burst (SPEC §8).
 - **Ceremonies are resumable and idempotent per `(ceremony_id, round, seat)`** via Nostr
   event-id dedup (SPEC §5, §13.2) — this is the structural defense against interruption at
   scale; readers merge and dedup across relays so a single reachable honest relay suffices.
-- **Containerized n=1000 load test in M2** with relay rate-limit tuning is an explicit
+- **Containerized n=100 load test in M2** with relay rate-limit tuning is an explicit
   milestone deliverable (SPEC §13.2) — do not discover the O(n²) wall in production.
 - **Offline `--in/--out` file mode** is a first-class fallback for when relays fail entirely
   (SPEC §7).
@@ -508,28 +508,28 @@ bursts.
 - Relay retention/rate-limit left at defaults.
 - No load test above ~dozens of simulated participants before real deployment.
 
-**Phase to address:** **M2** (real transport, DKG at n=1000, relay tuning, resumable
+**Phase to address:** **M2** (real transport, DKG at n=100, relay tuning, resumable
 ceremonies — the entire milestone, SPEC §13.2).
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall 11: FROST is not robust — one malformed/absent share aborts a 501-way session (liveness at scale)
+### Pitfall 11: FROST is not robust — one malformed/absent share aborts a 51-way session (liveness at scale)
 
 **What goes wrong:**
 FROST provides *identifiable abort* but **not robustness** (scheme survey §1.4, §3.6): a
 single participant who drops out or sends a malformed partial aborts the whole signing
-session. At n=1000 selecting *exactly* 501, the probability that all 501 stay live and
-correct through two rounds is low; naive "pick 501, sign" loops will thrash.
+session. At n=100 selecting *exactly* 51, the probability that all 51 stay live and
+correct through two rounds is low; naive "pick 51, sign" loops will thrash.
 
 **Why it happens:**
-FROST's non-robustness is invisible at 2-of-3. At 501-of-1000 it dominates operational
+FROST's non-robustness is invisible at 2-of-3. At 51-of-100 it dominates operational
 reality.
 
 **How to avoid:**
-- Over-provision the liveness poll (select more than 501 live candidates; SPEC §6.5.2 says
-  "select 501 live participants" — in practice poll a margin and finalize 501 from those
+- Over-provision the liveness poll (select more than 51 live candidates; SPEC §6.5.2 says
+  "select 51 live participants" — in practice poll a margin and finalize 51 from those
   who actually commit).
 - On timeout/abort, start a **new session** (fresh nonces, possibly different subset — never
   reuse commitments, Pitfall 1) rather than retrying with the same set.
@@ -538,7 +538,7 @@ reality.
   crypto. Not required by the spec; flag as a hardening option.
 
 **Warning signs:** signing sessions that hang on one non-responsive seat; retry loops that
-reuse the same 501 and the same commitments.
+reuse the same 51 and the same commitments.
 
 **Phase to address:** **M1** (session/abort semantics) and stress-tested in **M2** (real
 participants dropping out).
@@ -548,7 +548,7 @@ participants dropping out).
 ### Pitfall 12: Enroll without an immediate refresh — helpers retain delta knowledge, epoch boundary unclean
 
 **What goes wrong:**
-Enroll issues a share to a new seat via the repair/RTS technique: ≥501 helpers compute
+Enroll issues a share to a new seat via the repair/RTS technique: ≥51 helpers compute
 delta contributions (SPEC §6.4). Those helpers now *know* deltas about the new seat's share.
 If enroll is not immediately followed by a refresh, that knowledge lingers and the epoch
 boundary is not clean — the new member's share is partially known to a helper coalition.
@@ -575,7 +575,7 @@ docs describing enroll and refresh as independently schedulable.
 
 **What goes wrong:**
 The STANDBY key is generated in advance and is the sweep destination. But its own epoch-1
-holders are a 501-coalition-in-one-epoch just like any active epoch (SPEC §4). If the
+holders are a 51-coalition-in-one-epoch just like any active epoch (SPEC §4). If the
 standby is generated once and never refreshed, sweeping to it may move funds into the hands
 of a coalition that has had all the time in the world to form.
 
@@ -624,24 +624,24 @@ encrypt-or-not decision applied uniformly to all event kinds; custom padding log
 
 ---
 
-### Pitfall 15: Library/serialization version skew across 1000 heterogeneous clients
+### Pitfall 15: Library/serialization version skew across 100 heterogeneous clients
 
 **What goes wrong:**
-All 1000 participants serialize/deserialize `frost-secp256k1-tr` types (via the
+All 100 participants serialize/deserialize `frost-secp256k1-tr` types (via the
 `serialization` feature, base64 in event content, SPEC §7). If clients run different
 `frost-core`/`frost-secp256k1-tr` versions, serialization formats or the ciphersuite can
 diverge, producing packages that some clients can't parse or that yield inconsistent
-results — a ceremony-wide failure that's brutal to debug across 1000 machines.
+results — a ceremony-wide failure that's brutal to debug across 100 machines.
 
 **Why it happens:**
-1000 independent operators building/updating on their own schedules; a minor version bump
+100 independent operators building/updating on their own schedules; a minor version bump
 that changes a wire format.
 
 **How to avoid:**
 - **Pin exact library versions** (`Cargo.lock` committed, `frost-secp256k1-tr ≥3.0` pinned
   precisely) and gate the ceremony on a version handshake (the ceremony-open event declares
   the required version; clients on the wrong version refuse to join).
-- **Reproducible builds** so "same version" means "same binary" (SPEC §11.8) — 1000 people
+- **Reproducible builds** so "same version" means "same binary" (SPEC §11.8) — 100 people
   can verify they run identical code.
 - `cargo audit` / `cargo deny` in CI to catch a transitive bump.
 
@@ -657,9 +657,9 @@ using `^`/`~` ranges that float; participants on mixed versions with no handshak
 
 ### Pitfall 16: Identifier reuse / collision when enrolling replacements
 
-**What goes wrong:** A seat's `frost::Identifier` (1..=1000, u16) survives refresh; an
+**What goes wrong:** A seat's `frost::Identifier` (1..=100, u16) survives refresh; an
 enrolled replacement gets the vacated or a fresh identifier, and the identifier space may
-exceed 1000 historical values while the live set stays ≤1000 (SPEC §3). Accidentally
+exceed 100 historical values while the live set stays ≤100 (SPEC §3). Accidentally
 assigning a live identifier to two seats, or reusing a still-active one, corrupts Lagrange
 interpolation.
 **How to avoid:** the coordinator's SQLite roster is the single authority for
@@ -709,11 +709,11 @@ out-of-window events. **Phase:** M2, adversarial test in M5 (replayed envelopes,
 | Make signing sessions "resumable like ceremonies" | Uniform state machine, less code | Persists nonces → key-extraction bug class | **Never** |
 | Coordinator computes the sighash once and distributes it | Less per-client code, simpler UX | Enables blind-sign fund theft by a compromised coordinator | **Never** |
 | Delete old shares and call it revocation | Feels like a security win, no sweep needed | False security; retained insiders untouched; funds exposed | **Never** |
-| Use a public relay to "get started" | Zero ops setup | Ban/rate-limit at n=1000; retention loss mid-ceremony | Only for tiny (<~dozen) dev tests, never real ceremonies |
+| Use a public relay to "get started" | Zero ops setup | Ban/rate-limit at n=100; retention loss mid-ceremony | Only for tiny (<~dozen) dev tests, never real ceremonies |
 | Skip the byte-level bridge round-trip test | Ship M1 faster | Silent unspendable address or invalid signature on mainnet | **Never** |
 | One keypair for Nostr identity + FROST share | One fewer key to manage | Cross-tier compromise; correlation; model collapse | **Never** |
 | Verify same-key only on the coordinator | Less client code | Coordinator can lie; funds move to a dead key on buggy refresh | **Never** |
-| Float dependency versions (`^3.0`) | Auto-patch updates | Wire-format skew across 1000 clients; non-reproducible builds | Only pre-M2 prototyping |
+| Float dependency versions (`^3.0`) | Auto-patch updates | Wire-format skew across 100 clients; non-reproducible builds | Only pre-M2 prototyping |
 | Defer display-before-sign to M5 | Faster M1 signing flow | Retrofitting into coordinator-authoritative flow is error-prone | Discouraged — build the gate in M1 |
 
 ---
@@ -737,11 +737,11 @@ out-of-window events. **Phase:** M2, adversarial test in M5 (replayed envelopes,
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| O(n²) round-2 blowup | Relay bans, throttling, GB of events | Dedicated relays, raised limits, paced batches | n≈100s; catastrophic at n=1000 (~10⁶ events, ~1 GB) |
-| Non-resumable ceremony | A single interruption forces full restart | Idempotent dedup per `(ceremony_id, round, seat)` | Any ceremony whose wall-clock exceeds MTBF of 1000 laptops |
+| O(n²) round-2 blowup | Relay bans, throttling, MB of events | Dedicated relays, raised limits, paced batches | n≈100s; catastrophic at n=100 (~10⁴ events, ~10 MB) |
+| Non-resumable ceremony | A single interruption forces full restart | Idempotent dedup per `(ceremony_id, round, seat)` | Any ceremony whose wall-clock exceeds MTBF of 100 laptops |
 | Relay retention pruning | Late fetchers can't complete part3 | Raise retention for ceremony kinds until all fetched | Whenever retention < ceremony duration |
-| Exactly-501 selection | Sessions abort on any single dropout | Over-provision liveness poll; new session on abort | n=1000, real participants (FROST non-robust) |
-| Unbatched publish loop | Self-inflicted rate-limit trip | Paced round-2 batches | Round-2 burst of ~999 events/sender |
+| Exactly-51 selection | Sessions abort on any single dropout | Over-provision liveness poll; new session on abort | n=100, real participants (FROST non-robust) |
+| Unbatched publish loop | Self-inflicted rate-limit trip | Paced round-2 batches | Round-2 burst of ~99 events/sender |
 
 ---
 
@@ -772,7 +772,7 @@ out-of-window events. **Phase:** M2, adversarial test in M5 (replayed envelopes,
   *output* key `Q` (not internal `P`) and confirms on-chain.
 - [ ] **Events flow over Nostr:** Often missing — verify non-roster events are dropped
   client-side even when the relay delivers them.
-- [ ] **Ceremony runs at small n:** Often missing — verify n=1000 load test with relay tuning,
+- [ ] **Ceremony runs at small n:** Often missing — verify n=100 load test with relay tuning,
   paced batches, and interrupt-then-resume idempotency.
 - [ ] **Display-before-sign shows a summary:** Often missing — verify the summary is
   *recomputed locally from the PSBT*, not rendered from coordinator-supplied fields.
@@ -813,7 +813,7 @@ out-of-window events. **Phase:** M2, adversarial test in M5 (replayed envelopes,
 | 7. Tweak inconsistent in aggregation | M1 | Aggregate verifies against `Q`; merkle root `None` enforced |
 | 8. Blind signing | M1 (gate), M5 test | Local PSBT recompute; mismatched-summary test refuses |
 | 9. Deletion-as-revocation | M1 (docs), M4 (sweep) | Sweep is routine; standby pre-gen; policy forces sweeps |
-| 10. Public relay / scale | M2 | n=1000 load test, paced batches, resume-after-interrupt |
+| 10. Public relay / scale | M2 | n=100 load test, paced batches, resume-after-interrupt |
 | 11. FROST non-robustness | M1, M2 stress | Over-provisioned poll; new session on abort |
 | 12. Enroll without refresh | M3 | Enroll atomically chains refresh |
 | 13. Standby neglect | M4 | `standby_max_age` enforced; post-sweep nag |
@@ -845,5 +845,5 @@ out-of-window events. **Phase:** M2, adversarial test in M5 (replayed envelopes,
 - **.planning/PROJECT.md** — security model, epoch discipline, key decisions. [HIGH]
 
 ---
-*Pitfalls research for: FROST Taproot signing CLI (tsig) at t=501/n=1000*
+*Pitfalls research for: FROST Taproot signing CLI (tsig) at t=51/n=100*
 *Researched: 2026-07-10*

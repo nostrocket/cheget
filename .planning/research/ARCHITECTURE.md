@@ -1,6 +1,6 @@
 # Architecture Research
 
-**Domain:** Threshold-signature Bitcoin CLI (501-of-1000 FROST Taproot; single Rust binary, three personae)
+**Domain:** Threshold-signature Bitcoin CLI (51-of-100 FROST Taproot; single Rust binary, three personae)
 **Researched:** 2026-07-10
 **Confidence:** HIGH
 
@@ -102,7 +102,7 @@ tsig/
 │   └── lifecycle/          # L3 — standby/sweep/rollover state machine + policy engine
 └── tests/
     ├── bridge_roundtrip.rs # byte-level pin (must exist from day one)
-    ├── inproc_sign.rs      # 501-of-1000 simulated end-to-end sign on regtest sighash
+    ├── inproc_sign.rs      # 51-of-100 simulated end-to-end sign on regtest sighash
     └── adversarial/        # malicious relay, mixed-epoch, replay, nonce-reuse
 ```
 
@@ -141,7 +141,7 @@ These are the load-bearing boundaries. Component design exists to enforce them.
 ### Flow 1 — Signing session (`session sign`)
 
 ```
-Coordinator                              Participant (×501)                 Chain
+Coordinator                              Participant (×51)                 Chain
     │  parse PSBT (chain::parse)                │                             │
     │  sighash per input                        │                             │
     │  liveness poll ─────────────────────────► │                             │
@@ -164,21 +164,21 @@ Direction: coordinator pulls commitments (round 1), pushes signing packages, pul
 shares (round 2), aggregates locally, verifies via the bridge-derived output key `Q`, finalizes.
 Secrets never leave the participant; only public commitments and signature shares transit.
 
-### Flow 2 — DKG ceremony (keygen, n=1000)
+### Flow 2 — DKG ceremony (keygen, n=100)
 
 ```
-Coordinator                               Participant seat i (×1000)
+Coordinator                               Participant seat i (×100)
    │ ceremony-open (roster hash pinned) ──────►│
    │                                           │ dkg::part1 → round1 package (small)
-   │ ◄──── round1-package (broadcast, public) ─│      1000 broadcasts total
+   │ ◄──── round1-package (broadcast, public) ─│      100 broadcasts total
    │ collect + fan out all round-1 packages ──►│
-   │                                           │ dkg::part2 → 999 per-recipient packages
+   │                                           │ dkg::part2 → 99 per-recipient packages
    │                                           │   NIP-44-encrypt each to recipient npub,
    │                                           │   upload as ONE batched bundle (paced)
-   │ ◄──── round2-bundle (directed, enc) ──────│   ≈10⁶ directed envelopes across group
+   │ ◄──── round2-bundle (directed, enc) ──────│   ≈10⁴ directed envelopes across group
    │ route directed pkgs to each recipient ───►│ dkg::part3 → (KeyPackage, PublicKeyPackage)
    │ ◄──── confirmation (verifying key) ───────│   checkpoint KeyPackage encrypted to disk
-   │ collect all 1000 vk confirmations;        │
+   │ collect all 100 vk confirmations;        │
    │ any mismatch → ABORT ceremony             │
    │ epoch := 1; roster committed              │
 ```
@@ -248,7 +248,7 @@ key-extraction bug class. This is the single highest-severity rule in the spec.
 PSBT and ack outputs/amounts/fee; (b) same-key postcondition: new `PublicKeyPackage` verifying key
 `==` old after every refresh, else abort and discard.
 **When:** Signing (a) and refresh (b).
-**Trade-offs:** More work per participant; it is precisely the point at 501 signers.
+**Trade-offs:** More work per participant; it is precisely the point at 51 signers.
 
 ---
 
@@ -259,8 +259,8 @@ The scaling axis is **n (membership)**, not user traffic. Everything is single-g
 | Scale | Architecture behavior |
 |-------|-----------------------|
 | n=2–5 (dev/test) | In-process or single-machine; validates schema, resumption, bridge, sign correctness |
-| n=1000 signing | Signing cost is O(t)=501, not O(n²) — cheap; one round-trip of commitments + shares |
-| n=1000 DKG/refresh | **O(n²)**: ≈10⁶ events × ~1 KB ≈ **1 GB per ceremony**, ~999 directed envelopes per sender in round 2 — the real scaling wall |
+| n=100 signing | Signing cost is O(t)=51, not O(n²) — cheap; one round-trip of commitments + shares |
+| n=100 DKG/refresh | **O(n²)**: ≈10⁴ events × ~1 KB ≈ **10 MB per ceremony**, ~99 directed envelopes per sender in round 2 — the real scaling wall |
 
 ### Scaling Priorities
 
@@ -281,7 +281,7 @@ The scaling axis is **n (membership)**, not user traffic. Everything is single-g
 **Why it's wrong:** The frost↔rust-bitcoin key bridge is the classic integration-bug surface *and*
 the whole value proposition; you can spend weeks on O(n²) relay tuning before discovering the
 signature doesn't verify against the address.
-**Do this instead:** Prove the bridge + in-process 501-of-1000 sign first (build order Phase A/B),
+**Do this instead:** Prove the bridge + in-process 51-of-100 sign first (build order Phase A/B),
 with zero transport. This is exactly milestone M1.
 
 ### Anti-Pattern 2: Persisting or resuming signing nonces
@@ -322,7 +322,7 @@ swap the key.
 | `rust-bitcoin` | PSBT, `SighashCache::taproot_key_spend_signature_hash`, `Address::p2tr(secp, internal, None, network)` | Merkle root **must** be `None` (BIP86-style); x-only parity is the classic bridge bug — pin it |
 | `bitcoincore-rpc` / `esplora-client` | Behind `ChainBackend` trait; `tr()` watch-only descriptor import | Core needs descriptor import to track the address; keep Esplora feature-parity minimal |
 | `nostr-sdk` (NIP-44/42/59) | Behind `Transport` trait; multi-relay pool, dedup, roster-pinned event verification | Custom event kinds per message class; NIP-42 AUTH to roster; batch/pace round-2 publishes |
-| strfry / nostr-rs-relay (ops) | Not a dependency; ≥3 self-hosted, raised limits/retention | ~1 GB per ceremony; never a public relay |
+| strfry / nostr-rs-relay (ops) | Not a dependency; ≥3 self-hosted, raised limits/retention | ~10 MB per ceremony; never a public relay |
 | `age` + `zeroize` | Encrypt-always at-rest share files; zeroize in memory | No security claim on deletion — sweep is revocation |
 
 ### Internal Boundaries
@@ -344,18 +344,18 @@ Maps onto SPEC milestones M1–M5 but finer-grained.
 | Order | Deliverable | Proves / unblocks | Depends on | SPEC milestone |
 |-------|-------------|-------------------|------------|----------------|
 | **A** | **Key bridge + byte-level round-trip test** | verifying key → x-only → `XOnlyPublicKey` → P2TR is byte-correct (the classic integration bug) | crypto types, rust-bitcoin | M1 |
-| **B** | Crypto core + **in-process 501-of-1000 sign** (dealer keygen first for speed, then DKG in-process) | full crypto value: `aggregate_with_tweak(…,None)` → valid BIP340 sig over a regtest key-spend sighash verified against Q — **zero transport** | A, frost-secp256k1-tr | M1 |
+| **B** | Crypto core + **in-process 51-of-100 sign** (dealer keygen first for speed, then DKG in-process) | full crypto value: `aggregate_with_tweak(…,None)` → valid BIP340 sig over a regtest key-spend sighash verified against Q — **zero transport** | A, frost-secp256k1-tr | M1 |
 | **C** | ChainBackend trait + Core/Esplora + PSBT/sighash on regtest | real PSBTs and sighashes feed the signing session | rust-bitcoin, node | M1→M2 |
 | **D** | Storage: participant file store (age, epoch tag, nonce-exclusion) + coordinator SQLite | durable shares + resumable checkpoints; enforces nonce boundary | serde, age, rusqlite | M2 |
 | **E** | Transport trait + **FileTransport first**, then message schema, then NostrTransport | out-of-process ceremonies; file mode de-risks the schema before relay/network work | D | M2 / M5 |
-| **F** | Ceremony engine: resumable DKG **small-scale (n=5)** → then **n=1000 load test** over strfry | idempotency, epoch bookkeeping, relay rate-limit tuning, ~10⁶-event ceremony | crypto, E, D | M2 |
-| **G** | Distributed signing session over transport (liveness poll, display-before-sign) | real 501-of-1000 sign across the relay set | B, C, E | M2 |
+| **F** | Ceremony engine: resumable DKG **small-scale (n=5)** → then **n=100 load test** over strfry | idempotency, epoch bookkeeping, relay rate-limit tuning, ~10⁴-event ceremony | crypto, E, D | M2 |
+| **G** | Distributed signing session over transport (liveness poll, display-before-sign) | real 51-of-100 sign across the relay set | B, C, E | M2 |
 | **H** | Rotation: refresh (removals+proactivize), enroll (repair→refresh), same-key postcondition | membership change, same address, epoch mixing | F | M3 |
 | **I** | Lifecycle: standby key, sweep + rollover, watch + policy engine | true revocation path, cron/CI policy | C, H, store | M4 |
-| **J** | Hardening: offline file mode polish, reproducible builds, adversarial suite, external review of §6.5 + bridge | ships trust: 1000 people verify what they run | all | M5 |
+| **J** | Hardening: offline file mode polish, reproducible builds, adversarial suite, external review of §6.5 + bridge | ships trust: 100 people verify what they run | all | M5 |
 
 **Why A/B before everything:** the bridge is the highest-risk, lowest-infrastructure component.
-Proving it plus an in-process 501-of-1000 signature needs no relays, no node RPC, no persistence —
+Proving it plus an in-process 51-of-100 signature needs no relays, no node RPC, no persistence —
 just the crypto crate and rust-bitcoin. If that fails, nothing else matters; if it passes, the
 remaining work is "plumbing at scale," which is real but lower-risk. **Why FileTransport before
 NostrTransport (E):** identical `Transport` interface, no network/relay complexity — it validates
@@ -373,5 +373,5 @@ the message schema and resumption logic deterministically before the O(n²) rela
 - Known crate APIs (`rust-bitcoin` P2TR/sighash, `nostr-sdk` NIP-44/42), knowledge cutoff Jan 2026. HIGH.
 
 ---
-*Architecture research for: 501-of-1000 FROST Taproot signing CLI (tsig)*
+*Architecture research for: 51-of-100 FROST Taproot signing CLI (tsig)*
 *Researched: 2026-07-10*
