@@ -1,7 +1,7 @@
 //! Auto-spawned regtest fixture + broadcast/confirm smoke test (D-05).
 //!
 //! Proves the `corepc-node` auto-spawn + [`tsig::chain::CoreRpcBackend`] can
-//! fund, watch, broadcast, and confirm — the chain half of the eventual n=1000
+//! fund, watch, broadcast, and confirm — the chain half of the eventual n=100
 //! confirmed key-spend (the FROST signing half lands in 01-04, which reuses
 //! `spawn_regtest` from `tests/common`). No `bitcoind` need be installed; no
 //! secret key material of the FROST group is involved.

@@ -1,7 +1,7 @@
 //! Small-n in-process DKG correctness (KEY-01, KEY-02, KEY-05).
 //!
-//! Fast TDD-speed sizes (3-of-5) per D-01; the real t=501/n=1000 correctness
-//! proof is the `#[ignore]` `dkg_1000_correctness` test (KEY-06, D-03).
+//! Fast TDD-speed sizes (3-of-5) per D-01; the real t=51/n=100 correctness
+//! proof is the `#[ignore]` `dkg_100_correctness` test (KEY-06, D-03).
 
 use bitcoin::KnownHrp;
 use frost_secp256k1_tr::keys::EvenY;

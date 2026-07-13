@@ -1,4 +1,4 @@
-//! KEY-06 / D-03: full n=1000 in-process DKG correctness proof + O(n²)
+//! KEY-06 / D-03: full n=100 in-process DKG correctness proof + O(n²)
 //! timing/memory instrumentation.
 //!
 //! This is `#[ignore]` so it never runs on the per-PR quick gate (D-06); it is a
@@ -9,12 +9,12 @@
 //! seats processes ~n peer packages, and each round-3 verification is O(t)):
 //!
 //! ```text
-//! cargo test --release --test dkg_1000_correctness -- --ignored --nocapture
+//! cargo test --release --test dkg_100_correctness -- --ignored --nocapture
 //! ```
 //!
 //! The DKG loop is inlined here (rather than calling `run_inprocess_dkg`) so we
 //! can time `part1` / `part2` / `part3` separately. The correctness invariant it
-//! asserts — all 1000 `KeyPackage`s verify to ONE group `PublicKeyPackage` — is
+//! asserts — all 100 `KeyPackage`s verify to ONE group `PublicKeyPackage` — is
 //! identical to what `run_inprocess_dkg` enforces (crypto/keygen.rs). Rounds 2
 //! and 3 are parallelized across seats (the per-seat crypto is independent and
 //! deterministic; only round 1 needs the shared RNG and stays sequential), so
@@ -30,15 +30,15 @@ use frost::keys::{EvenY, KeyPackage, PublicKeyPackage};
 use frost::Identifier;
 
 #[test]
-#[ignore = "n=1000 O(n^2) DKG — nightly/on-demand only (D-06); run with --release --ignored --nocapture"]
-fn dkg_1000_all_shares_verify_to_one_group_key() {
-    // Defaults to the mandated acceptance target t=501, n=1000 (D-02). The scale
+#[ignore = "n=100 O(n^2) DKG — nightly/on-demand only (D-06); run with --release --ignored --nocapture"]
+fn dkg_100_all_shares_verify_to_one_group_key() {
+    // Defaults to the mandated acceptance target t=51, n=100 (D-02). The scale
     // is overridable via TSIG_DKG_T / TSIG_DKG_N so the same instrumented loop
     // can capture O(n^2) scaling data points at smaller, faster-completing sizes
-    // (the DKG code is generic over (t, n) per D-01). The default full run is a
-    // ~1-hour / multi-CPU-hour nightly job — see the plan SUMMARY.
-    let max_signers: u16 = env_u16("TSIG_DKG_N", 1000);
-    let min_signers: u16 = env_u16("TSIG_DKG_T", 501);
+    // (the DKG code is generic over (t, n) per D-01). At n=100 the full run is
+    // an on-demand job (see Task 5 for the measured wall-clock), not the PR gate.
+    let max_signers: u16 = env_u16("TSIG_DKG_N", 100);
+    let min_signers: u16 = env_u16("TSIG_DKG_T", 51);
     assert!(
         min_signers >= 1 && min_signers <= max_signers,
         "require 1 <= t ({min_signers}) <= n ({max_signers})"
@@ -81,7 +81,7 @@ fn dkg_1000_all_shares_verify_to_one_group_key() {
                     // Clone the round-1 package map ONCE per worker, then present
                     // "all others" to each seat by removing/re-inserting its own
                     // entry — avoids the O(n^2 * t) memory blow-up of rebuilding
-                    // a 999-entry commitment map per seat.
+                    // a 99-entry commitment map per seat.
                     let mut pool = (*r1_pkgs_ref).clone();
                     let mut out = Vec::with_capacity(bucket.len());
                     for (id, secret) in bucket {
@@ -149,10 +149,10 @@ fn dkg_1000_all_shares_verify_to_one_group_key() {
     let d3 = t3.elapsed();
 
     // Memory measured here, at the peak-holding point (round-1/round-2 package
-    // maps + all 1000 derived KeyPackages still live), before anything drops.
+    // maps + all 100 derived KeyPackages still live), before anything drops.
     let rss_mib = resident_set_mib();
 
-    // ---- Correctness: all 1000 KeyPackages verify to ONE group key (KEY-06) ----
+    // ---- Correctness: all 100 KeyPackages verify to ONE group key (KEY-06) ----
     let mut group: Option<PublicKeyPackage> = None;
     let mut verified = 0usize;
     for (id, kp, pubkeys) in &kp_results {

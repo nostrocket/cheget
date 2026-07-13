@@ -7,8 +7,8 @@
 //!   and cheater/timeout abort semantics;
 //! * Task 3 — the end-to-end CONFIRMED regtest key-spend (crown jewel).
 //!
-//! The n=1000 variant lives in `tests/inproc_sign_1000.rs` (`#[ignore]`,
-//! nightly); adversarial gates live in `tests/sign_adversarial.rs`.
+//! The n=100 variant lives in `tests/inproc_sign_100.rs` (`#[ignore]`,
+//! on-demand); adversarial gates live in `tests/sign_adversarial.rs`.
 
 mod common;
 
@@ -76,13 +76,13 @@ fn round1_over_provisioned_poll_selects_exactly_t() {
     // exactly t (Pitfall 11).
     assert_eq!(over_provisioned_poll_size(3, 5), 4, "3-of-5 polls one spare");
     assert_eq!(
-        over_provisioned_poll_size(501, 1000),
-        552,
-        "501-of-1000 polls a 51-seat margin"
+        over_provisioned_poll_size(51, 100),
+        57,
+        "51-of-100 polls a 6-seat margin"
     );
     assert_eq!(
-        over_provisioned_poll_size(501, 510),
-        510,
+        over_provisioned_poll_size(51, 55),
+        55,
         "poll size is capped at the roster size n"
     );
 

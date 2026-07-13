@@ -4,7 +4,7 @@
 //!   (it fronts the confirm path).
 //! * `EsploraBackend` is exercised against an in-process mock Esplora HTTP server
 //!   so the test stays hermetic (D-07: Esplora is conformance-covered only, never
-//!   in the n=1000 confirm path — no electrs/regtest-esplora stack is stood up).
+//!   in the n=100 confirm path — no electrs/regtest-esplora stack is stood up).
 //!
 //! Both backends are driven through the SAME trait surface via
 //! [`assert_query_surface`], proving one contract, two implementations.

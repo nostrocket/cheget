@@ -122,7 +122,7 @@ fn address_command_reads_pubkey_file_and_prints_vector_address() {
     // group verifying key).
     let vk = vk_from_hex(&v.compressed_sec1);
     let shares = BTreeMap::new();
-    let pkg = frost::keys::PublicKeyPackage::new(shares, vk, Some(501));
+    let pkg = frost::keys::PublicKeyPackage::new(shares, vk, Some(51));
 
     let envelope =
         PubkeyEnvelope::from_package("test-key", 0, &pkg).expect("envelope encodes");

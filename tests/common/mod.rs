@@ -90,8 +90,8 @@ pub fn spawn_regtest() -> RegtestFixture {
 
 /// End-to-end CONFIRMED regtest key-spend at `t`-of-`n` — the crown-jewel proof
 /// (SIGN-04, D-02/D-05/D-06). Shared by the small-`n` PR gate
-/// (`tests/inproc_sign.rs`) and the `#[ignore]` n=1000 nightly gate
-/// (`tests/inproc_sign_1000.rs`).
+/// (`tests/inproc_sign.rs`) and the `#[ignore]` n=100 on-demand gate
+/// (`tests/inproc_sign_100.rs`).
 ///
 /// Runs the whole pipeline against an auto-spawned regtest node: in-process DKG →
 /// bridge to a P2TR address → import the watch-only `tr()` descriptor → fund it →
