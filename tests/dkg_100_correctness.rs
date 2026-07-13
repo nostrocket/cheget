@@ -1,15 +1,15 @@
 //! KEY-06 / D-03: full n=100 in-process DKG correctness proof + O(n²)
 //! timing/memory instrumentation.
 //!
-//! This is `#[ignore]` so it never runs on the per-PR quick gate (D-06); it is a
-//! nightly / on-demand deliverable. The *measurement itself* is the point —
-//! pass/fail is feasibility, not a fixed threshold (D-03).
+//! Runs by default (no `#[ignore]`); release is strongly recommended because the
+//! ceremony is O(n²) and a debug build is materially slower. The *measurement
+//! itself* is the point — pass/fail is feasibility, not a fixed threshold (D-03).
 //!
 //! Run it (release strongly recommended — the ceremony is O(n²): each of n
 //! seats processes ~n peer packages, and each round-3 verification is O(t)):
 //!
 //! ```text
-//! cargo test --release --test dkg_100_correctness -- --ignored --nocapture
+//! cargo test --release --test dkg_100_correctness -- --nocapture
 //! ```
 //!
 //! The DKG loop is inlined here (rather than calling `run_inprocess_dkg`) so we
@@ -30,7 +30,6 @@ use frost::keys::{EvenY, KeyPackage, PublicKeyPackage};
 use frost::Identifier;
 
 #[test]
-#[ignore = "n=100 O(n^2) DKG — nightly/on-demand only (D-06); run with --release --ignored --nocapture"]
 fn dkg_100_all_shares_verify_to_one_group_key() {
     // Defaults to the mandated acceptance target t=51, n=100 (D-02). The scale
     // is overridable via CHEGET_DKG_T / CHEGET_DKG_N so the same instrumented loop

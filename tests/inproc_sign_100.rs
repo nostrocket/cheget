@@ -1,9 +1,9 @@
 //! Full-scale in-process signing proof — t=51 / n=100 (D-02), the REAL
 //! acceptance target for the crown-jewel key-spend.
 //!
-//! `#[ignore]` by default: it spins up a regtest node and runs a full n=100
-//! in-process DKG before the confirmed key-spend, so it is kept off the unit-test
-//! PR gate (see Task 5 for the measured wall-clock and the ignore decision). It
+//! Runs by default (no `#[ignore]`): it spins up a regtest node and runs a full
+//! n=100 in-process DKG before the confirmed key-spend. Release is strongly
+//! recommended — a debug build makes the O(n²) DKG materially slower. It
 //! runs the SAME end-to-end pipeline as the small-`n` PR test
 //! (`tests/inproc_sign.rs`) — DKG → address → fund → sign →
 //! aggregate-with-tweak → verify against `Q` → finalize → broadcast → CONFIRM on
@@ -15,7 +15,7 @@
 //!
 //! Run it with:
 //! ```text
-//! cargo test --release --test inproc_sign_100 -- --ignored --nocapture
+//! cargo test --release --test inproc_sign_100 -- --nocapture
 //! ```
 
 mod common;
@@ -33,7 +33,6 @@ fn scale() -> (u16, u16) {
 }
 
 #[test]
-#[ignore = "on-demand: full-scale n=100 in-process DKG + confirmed regtest key-spend (D-02/D-06)"]
 fn inproc_sign_confirmed_regtest_key_spend_51_of_100() {
     let (t, n) = scale();
     eprintln!("running full-scale confirmed key-spend at t={t} of n={n} (D-02)");
