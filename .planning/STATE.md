@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-10 — Phase 01 execution started
+Last activity: 2026-07-13 - Completed quick task 260713-itg: Massively speed up the in-process n=1000 FROST DKG simulation
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -89,6 +89,12 @@ None yet.
 - [Roadmap]: The `Transport` trait + in-memory stub is the load-bearing architectural seam — it MUST be introduced in Phase 1 so DKG-at-scale (Phase 3), rotation (Phase 4), lifecycle (Phase 5), and hardening (Phase 6) all validate locally with zero relay code
 - [Roadmap]: n=1000 O(n²) DKG over Nostr (TRAN-08) is the highest project unknown — Phase 7 flagged for deeper research on strfry tuning + round-2 pacing; the load test is a gating deliverable, not optional. Keep `FileTransport` + schema before `NostrTransport` within Phase 7
 - [Roadmap]: KEY-06 (local n=1000 DKG) de-risks the O(n²) compute cost in Phase 3 before any relay code, isolating compute-scaling from transport-scaling
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260713-itg | Massively speed up the in-process n=1000 FROST DKG simulation (rayon-parallel rounds 2/3, O(n²) clone elimination, release-profile tuning) — ~6.6× at t=101/n=200 | 2026-07-13 | 9bc25e4 | [260713-itg-massively-speed-up-the-in-process-n-1000](./quick/260713-itg-massively-speed-up-the-in-process-n-1000/) |
 
 ## Deferred Items
 
