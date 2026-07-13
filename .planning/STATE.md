@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-13 - Completed quick task 260713-jqs: Change fixed FROST parameters to t=51/n=100 across the entire project
+Last activity: 2026-07-13 - Completed quick task 260713-kgv: add a readme
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -96,6 +96,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260713-itg | Massively speed up the in-process n=100 FROST DKG simulation (rayon-parallel rounds 2/3, O(n²) clone elimination, release-profile tuning) — ~6.6× at t=101/n=200 | 2026-07-13 | 9bc25e4 | [260713-itg-massively-speed-up-the-in-process-n-1000](./quick/260713-itg-massively-speed-up-the-in-process-n-1000/) |
 | 260713-jqs | Change fixed FROST parameters t=501/n=1000 → t=51/n=100 across the entire project (live docs, Phase-1 history, source, tests); renamed full-scale tests to `_100`, corrected #[ignore] cost language. Measured full 51/100: crown-jewel regtest key-spend 9.90s, DKG group-key proof 4.41s | 2026-07-13 | 07a0f25 | [260713-jqs-change-fixed-frost-parameters-from-t-501](./quick/260713-jqs-change-fixed-frost-parameters-from-t-501/) |
+| 260713-kgv | add a readme | 2026-07-13 | 8858b36 | [260713-kgv-add-a-readme](./quick/260713-kgv-add-a-readme/) |
 
 ## Deferred Items
 
