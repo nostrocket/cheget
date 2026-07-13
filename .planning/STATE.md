@@ -23,7 +23,7 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-07-10)
 
-**Core value:** A group of 1000 can jointly control one Bitcoin address (any 501 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
+**Core value:** A group of 100 can jointly control one Bitcoin address (any 51 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
 **Current focus:** Phase 01 — crypto-bridge-in-process-signing
 
 ## Current Position
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-07-13 - Completed quick task 260713-itg: Massively speed up the in-process n=1000 FROST DKG simulation
+Last activity: 2026-07-13 - Completed quick task 260713-jqs: Change fixed FROST parameters to t=51/n=100 across the entire project
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -70,9 +70,9 @@ Recent decisions affecting current work:
 
 - [Init]: Roadmap covers all of M1–M5 (full spec end-to-end)
 - [Init]: DKG is the only keygen path; dealer mode dropped — Phase 1 keygen is in-process DKG with simulated participants
-- [Init]: Crypto bridge proven early via in-process DKG before n=1000 transport (Phase 1 = bridge + regtest key-spend, zero transport)
+- [Init]: Crypto bridge proven early via in-process DKG before n=100 transport (Phase 1 = bridge + regtest key-spend, zero transport)
 - [Revision]: Prove the entire system LOCALLY first, real transport LAST. The `Transport` trait + in-memory stub (introduced Phase 1) let every ceremony phase (3–6) run with zero relay code; Phase 7 swaps in real `FileTransport`/`NostrTransport` behind the same trait and re-runs at scale
-- [Revision]: Local DKG-at-scale compute proof (KEY-06, Phase 3, n=1000 in-process) is separated from the transport-layer relay load test (TRAN-08, Phase 7)
+- [Revision]: Local DKG-at-scale compute proof (KEY-06, Phase 3, n=100 in-process) is separated from the transport-layer relay load test (TRAN-08, Phase 7)
 - [Revision]: SEC-03 narrowed to locally-verifiable adversarial tests (mixed-epoch, nonce-reuse-won't-compile) in hardening (Phase 6); new SEC-05 (malicious-relay DoS, replayed-envelope rejection) lives in the final transport phase (Phase 7)
 - [Phase ?]: [01-01]: Canonical bridge established; x-only from_slice confined to bridge/taproot.rs; even-Y invariant rejects OddY (D-11)
 - [Phase ?]: [01-01]: Public-artifact envelope (D-09) = frost PublicKeyPackage hex in serde_json with key_id + reserved epoch; tsig address --network defaults to bitcoin
@@ -87,14 +87,15 @@ None yet.
 
 - [Roadmap]: Four controls MUST be structural from Phase 1, not retrofitted — non-serializable nonce type (SIGN-05), byte-level bridge round-trip (KEY-03), tweak/aggregate verified against Q (SIGN-03/04), display-before-sign sighash recompute (SIGN-07)
 - [Roadmap]: The `Transport` trait + in-memory stub is the load-bearing architectural seam — it MUST be introduced in Phase 1 so DKG-at-scale (Phase 3), rotation (Phase 4), lifecycle (Phase 5), and hardening (Phase 6) all validate locally with zero relay code
-- [Roadmap]: n=1000 O(n²) DKG over Nostr (TRAN-08) is the highest project unknown — Phase 7 flagged for deeper research on strfry tuning + round-2 pacing; the load test is a gating deliverable, not optional. Keep `FileTransport` + schema before `NostrTransport` within Phase 7
-- [Roadmap]: KEY-06 (local n=1000 DKG) de-risks the O(n²) compute cost in Phase 3 before any relay code, isolating compute-scaling from transport-scaling
+- [Roadmap]: n=100 O(n²) DKG over Nostr (TRAN-08) is the highest project unknown — Phase 7 flagged for deeper research on strfry tuning + round-2 pacing; the load test is a gating deliverable, not optional. Keep `FileTransport` + schema before `NostrTransport` within Phase 7
+- [Roadmap]: KEY-06 (local n=100 DKG) de-risks the O(n²) compute cost in Phase 3 before any relay code, isolating compute-scaling from transport-scaling
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260713-itg | Massively speed up the in-process n=1000 FROST DKG simulation (rayon-parallel rounds 2/3, O(n²) clone elimination, release-profile tuning) — ~6.6× at t=101/n=200 | 2026-07-13 | 9bc25e4 | [260713-itg-massively-speed-up-the-in-process-n-1000](./quick/260713-itg-massively-speed-up-the-in-process-n-1000/) |
+| 260713-itg | Massively speed up the in-process n=100 FROST DKG simulation (rayon-parallel rounds 2/3, O(n²) clone elimination, release-profile tuning) — ~6.6× at t=101/n=200 | 2026-07-13 | 9bc25e4 | [260713-itg-massively-speed-up-the-in-process-n-1000](./quick/260713-itg-massively-speed-up-the-in-process-n-1000/) |
+| 260713-jqs | Change fixed FROST parameters t=501/n=1000 → t=51/n=100 across the entire project (live docs, Phase-1 history, source, tests); renamed full-scale tests to `_100`, corrected #[ignore] cost language. Measured full 51/100: crown-jewel regtest key-spend 9.90s, DKG group-key proof 4.41s | 2026-07-13 | 07a0f25 | [260713-jqs-change-fixed-frost-parameters-from-t-501](./quick/260713-jqs-change-fixed-frost-parameters-from-t-501/) |
 
 ## Deferred Items
 
