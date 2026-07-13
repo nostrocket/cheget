@@ -41,20 +41,73 @@ no persistence. What is implemented and tested:
 |------------|-------|-----------|
 | **frost↔rust-bitcoin key bridge** — FROST `VerifyingKey` → 33-byte SEC1 → x-only → `XOnlyPublicKey` → BIP341 P2TR address (merkle root `None`) and output key `Q` | `src/bridge/taproot.rs` | byte-level round-trip / known-answer test in `tests/bridge_roundtrip.rs` (against `tests/vectors/bip341_keyspend.json`) |
 | **In-process DKG** — simulated participants, no transport, producing a group `PublicKeyPackage` whose verifying key is the Taproot internal key `P`, with client-side key confirmation | `src/crypto/` | `tests/dkg_small.rs`, `tests/dkg_100_correctness.rs` |
-| **In-process two-round FROST signing** — Taproot tweak via `sign_with_tweak` / `aggregate_with_tweak(…, None)`, producing a 64-byte BIP340 signature that verifies against the output key `Q`, finalizing a PSBT and broadcasting a **confirmed** key-spend on regtest | `src/session/` | crown-jewel test `tests/inproc_sign_100.rs::inproc_sign_confirmed_regtest_key_spend_51_of_100` (`#[ignore]`, run on demand) |
+| **In-process two-round FROST signing** — Taproot tweak via `sign_with_tweak` / `aggregate_with_tweak(…, None)`, producing a 64-byte BIP340 signature that verifies against the output key `Q`, finalizing a PSBT and broadcasting a **confirmed** key-spend on regtest | `src/session/` | crown-jewel test `tests/inproc_sign_100.rs::inproc_sign_confirmed_regtest_key_spend_51_of_100` |
 | **`Transport` trait + in-memory/in-process stub** — the architectural seam later ceremony phases run against; no relay or Nostr code exists yet | `src/transport/` | `tests/transport_stub.rs` |
 | **`ChainBackend` trait** — Bitcoin Core JSON-RPC and Esplora implementations plus a key-spend sighash helper | `src/chain/` | `tests/chain_backend_conformance.rs`, `tests/regtest_fixture.rs` |
 
 All of the above runs on a **single host with no networking**. The DKG uses
-simulated participants in one process; signing runs the coordinator and all
-signers in-process against the in-memory transport stub.
+simulated participants in one process ("simulate-all-seats"); signing runs the
+coordinator and all signers in-process against the in-memory transport stub.
 
-**CLI status (honest):** the clap persona tree (participant / coordinator /
-watcher) is scaffolded in `src/cli/`, but only `cheget watcher address` — which
-prints the group's BIP341 P2TR address from a public-key-package file — is wired
-end-to-end from the command line. The `keygen` and `sign` flows exist as the
-in-process, test-driven paths (`tests/inproc_sign*.rs`, `tests/dkg_*.rs`); their
-CLI handlers are not yet a polished multi-command UX.
+### CLI surface today (honest)
+
+The clap persona tree (participant / coordinator / watcher) dispatches to real
+handlers. Three commands run end-to-end from the command line, but the two
+ceremony commands (`keygen`, `sign`) run an **in-process simulate-all-seats DKG**
+— there is no transport, no multi-party rounds over a network, and no persisted
+secret share.
+
+```text
+cheget
+├── participant
+│   ├── keygen   in-process DKG; writes ONLY the public key package
+│   └── sign     in-process DKG + two-round signing over a supplied PSBT
+├── coordinator
+│   ├── keygen   (same in-process handler as participant keygen)
+│   └── sign     (same in-process handler as participant sign)
+└── watcher
+    └── address  derive the group's BIP341 P2TR address (offline, no network)
+```
+
+- **`watcher address`** — fully usable offline. Reads a public-artifact file (a
+  serialized `PublicKeyPackage` envelope: `key_id`, `epoch`, `pubkey_package_hex`)
+  and prints the group's BIP341 P2TR address. No secret material is read, and no
+  network call is made.
+
+  ```text
+  cheget watcher address --pubkey <FILE> [--network <NETWORK>]
+  ```
+
+  `--network` accepts exactly `bitcoin` (mainnet, `bc1p…`), `testnet`
+  (`tb1p…`), `signet` (`tb1p…`), or `regtest` (`bcrt1p…`). The default is
+  `bitcoin`.
+
+- **`participant keygen` / `coordinator keygen`** — run an in-process DKG and
+  write **only** the public `PublicKeyPackage` envelope to `--out`; the secret
+  shares live in the process for the run and are never serialized. Without
+  `--full` a fast **3-of-5** ceremony runs; `--full` runs the real **51-of-100**
+  acceptance target; explicit `--seats` / `--threshold` override both.
+
+  ```text
+  cheget coordinator keygen --key-id <ID> --out <FILE> [--full] \
+                            [--seats <N>] [--threshold <T>] [--ceremony <NAME>]
+  ```
+
+  The written file is exactly what `watcher address --pubkey <FILE>` consumes.
+
+- **`participant sign` / `coordinator sign`** — a **self-contained demonstration**
+  of the two-round signing pipeline. Because no secret share is persisted, the
+  command runs its own in-process DKG, derives the group address, and signs the
+  supplied `--psbt` against it. The PSBT must therefore spend the address this run
+  derives — it is not signing of an externally-funded, persisted-key wallet
+  (that arrives in Phase 2). The default network is `regtest`. Signing is gated by
+  a display-before-sign acknowledgement; `--yes` skips only the interactive human
+  ack (for automation/regtest), never the local sighash recompute.
+
+  ```text
+  cheget coordinator sign --psbt <FILE> [--network <NETWORK>] [--yes] \
+                          [--full] [--seats <N>] [--threshold <T>] [--session <NAME>]
+  ```
 
 **Structural security controls (present from Phase 1):**
 
@@ -68,16 +121,76 @@ CLI handlers are not yet a polished multi-command UX.
 - FROST 3.0 cheater-detection culprits are surfaced on abort
   (`tests/sign_adversarial.rs`).
 
-**Measured local timings (optional, informational):** on one developer machine the
-full 51-of-100 regtest key-spend runs in ~9.9 s and the DKG group-key proof in
-~4.4 s. These are local measurements, not benchmarks.
+## How to use on regtest
+
+Everything in this section works today. There is **no standing `cheget` daemon**
+that talks to a live regtest node — live signing all the way to a confirmed
+key-spend is exercised through the integration test harness, which spins up a
+throwaway node for you.
+
+**1. End-to-end confirmed key-spend (the crown jewel).** The full pipeline — DKG →
+address → fund → sign → aggregate-with-tweak → verify against `Q` → finalize →
+broadcast → **confirm** — runs as an integration test that auto-spawns a throwaway
+regtest `bitcoind` via the `corepc-node` dev-dependency. No manual node setup is
+needed:
+
+```sh
+cargo test --release --test inproc_sign_100 -- --nocapture
+```
+
+Release is strongly recommended: on one developer machine the confirmed 51-of-100
+key-spend runs in roughly ~9 s under `--release` versus ~90 s in a debug build
+(local measurements, not benchmarks). The scale is overridable via the
+`CHEGET_SIGN_T` / `CHEGET_SIGN_N` environment variables (default 51 / 100) to
+capture faster intermediate data points.
+
+**2. Derive a regtest address (offline).** From any public-key-package file:
+
+```sh
+cheget watcher address --pubkey pk.json --network regtest
+# → bcrt1p...
+```
+
+**3. Run the in-process signing pipeline locally.** The `sign` command defaults to
+the `regtest` network and drives the real two-round signing flow over the
+in-memory transport stub. It is self-contained: it runs its own in-process DKG and
+the supplied PSBT must spend the address it prints.
+
+```sh
+cheget coordinator sign --psbt spend.psbt --network regtest --yes
+```
+
+## How to use on mainnet
+
+Only **one** mainnet action is possible today, and it is offline and safe: deriving
+the group's mainnet P2TR address from a public `PublicKeyPackage`. It makes no
+network calls and touches no secret material.
+
+```sh
+# 1. Produce a public key package (in-process DKG; writes only public data).
+cheget coordinator keygen --key-id active --out pk.json
+
+# 2. Derive the mainnet address from that public package.
+cheget watcher address --pubkey pk.json --network bitcoin
+# → bc1p...
+```
+
+> **Safety / status — read this before doing anything with real funds.**
+> This is **Phase 1 only** and is **not production-audited**. The full mainnet
+> signing and custody ceremony — multi-party signing rounds over a transport,
+> signing of an externally-funded PSBT, broadcast, watching, and the sweep to a
+> standby key — is **NOT yet wired** and arrives in later phases (see Planned,
+> below). The in-process `keygen`/`sign` commands simulate all seats in one
+> process with no persistence, so they cannot custody funds for a real 100-member
+> group. **Do not entrust real funds to flows that do not exist yet.** The only
+> mainnet-safe action today is offline address derivation.
 
 ## Planned (not yet built)
 
 The following are designed in the roadmap and spec but **not implemented**. In
 particular, **no transport, relay, or Nostr code exists yet**, and there is **no
 persistence layer yet** — all current state lives in memory for the duration of a
-test run.
+run.
 
 - **Phase 2 — Persistence & storage:** at-rest share encryption (age/scrypt) with
   in-memory zeroize, encrypted between-round ceremony checkpointing, and a
@@ -123,26 +236,42 @@ computing base stays small. For the full design rationale see
 
 ## Building & testing
 
+There is no packaged release — the crate is not published to any registry. Build
+from source:
+
 ```sh
-# Build the release binary.
+# Build (debug).
+cargo build
+
+# Build the optimized release binary.
 cargo build --release
 
 # Run the standard test suite.
 cargo test
 ```
 
-The heavy full-scale tests — notably the crown-jewel confirmed-regtest key-spend
-`tests/inproc_sign_100.rs::inproc_sign_confirmed_regtest_key_spend_51_of_100` — are
-marked `#[ignore]` and run on demand (they spin up a throwaway regtest `bitcoind`
-via `corepc-node`). Run an ignored test explicitly, for example:
+Two full-scale tests exercise the real 51-of-100 acceptance target and now **run by
+default** (no `#[ignore]` — an earlier version of this README wrongly claimed they
+had to be run with `--ignored`). Because both are O(n²), the release profile is
+strongly recommended:
 
 ```sh
-cargo test --release -- --ignored inproc_sign_confirmed_regtest_key_spend_51_of_100
+# Crown-jewel: confirmed regtest key-spend at t=51, n=100 (auto-spawns bitcoind).
+cargo test --release --test inproc_sign_100 -- --nocapture
+
+# Full n=100 in-process DKG correctness + O(n²) timing/memory instrumentation.
+cargo test --release --test dkg_100_correctness -- --nocapture
 ```
+
+Both accept environment overrides so you can capture faster, smaller data points:
+the signing test honors `CHEGET_SIGN_T` / `CHEGET_SIGN_N` and the DKG test honors
+`CHEGET_DKG_T` / `CHEGET_DKG_N` (each defaults to 51 / 100). On one developer
+machine the confirmed regtest key-spend runs in ~9 s under `--release` versus ~90 s
+in debug; these are local measurements, not benchmarks.
 
 **MSRV is Rust 1.85**, and `Cargo.lock` is committed so builds are reproducible —
 verifiability is a first-class goal (many people must be able to verify what they
-run). There is no packaged release: build from source with the commands above.
+run).
 
 ## Security model (current)
 
