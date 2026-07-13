@@ -30,6 +30,17 @@ clap = { version = "4.6.1", features = ["derive"] }
 # Public-artifact envelope (de)serialization; NEVER placed on the nonce type.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Data-parallelism for the in-process DKG simulation (rounds 2/3 are pure,
+# RNG-free, per-seat independent work). Exact-pinned for reproducible builds.
+rayon = "=1.12.0"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+# NOTE (reproducible builds): do NOT add target-cpu=native here — it breaks the
+# 1000-verifier reproducibility requirement. The nightly measurement machine may
+# opt in locally/ephemerally via RUSTFLAGS="-C target-cpu=native", never committed.
 
 [dev-dependencies]
 # Compile-fail harness proving the nonce type is non-serializable (SIGN-05, 01-04).
