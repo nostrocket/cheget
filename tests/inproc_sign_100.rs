@@ -9,7 +9,7 @@
 //! aggregate-with-tweak → verify against `Q` → finalize → broadcast → CONFIRM on
 //! the auto-spawned regtest node — just at full scale.
 //!
-//! The `(t, n)` scale is overridable via `TSIG_SIGN_T` / `TSIG_SIGN_N` (default
+//! The `(t, n)` scale is overridable via `CHEGET_SIGN_T` / `CHEGET_SIGN_N` (default
 //! 51 / 100) so an operator can capture intermediate data points that complete
 //! within a tighter time budget; the default remains the mandated 51/100.
 //!
@@ -21,11 +21,11 @@
 mod common;
 
 fn scale() -> (u16, u16) {
-    let t = std::env::var("TSIG_SIGN_T")
+    let t = std::env::var("CHEGET_SIGN_T")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(51u16);
-    let n = std::env::var("TSIG_SIGN_N")
+    let n = std::env::var("CHEGET_SIGN_N")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(100u16);

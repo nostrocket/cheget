@@ -6,8 +6,8 @@
 use bitcoin::KnownHrp;
 use frost_secp256k1_tr::keys::EvenY;
 
-use tsig::bridge::address_from_group_key;
-use tsig::crypto::{confirm_group_key, run_inprocess_dkg, KeygenError};
+use cheget::bridge::address_from_group_key;
+use cheget::crypto::{confirm_group_key, run_inprocess_dkg, KeygenError};
 
 /// A 3-of-5 in-process DKG yields one even-Y group key that every seat confirms
 /// and that the canonical bridge turns into a P2TR address (KEY-01/02).

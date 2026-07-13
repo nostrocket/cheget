@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Prove the entire cryptographic value of `tsig` **in-process** — DKG → BIP341 address →
+Prove the entire cryptographic value of `cheget` **in-process** — DKG → BIP341 address →
 two-round tweaked signing → a **confirmed regtest key-spend** — with zero transport, zero
 relays, and zero encrypted-at-rest persistence, and with the four structural security
 controls present from the first line of signing code:
@@ -73,7 +73,7 @@ encrypted at-rest secret storage / SQLite coordinator store (Phase 2); membershi
   swap in Nostr behind the same seam with no call-site churn.
 - **D-09:** **State/key flow without a persistence layer:** public artifacts (the
   `PublicKeyPackage` / group verifying key) are written to **plaintext files** (they are
-  public, not secret); `tsig address --pubkey <file>` reads one. **Secret share material
+  public, not secret); `cheget address --pubkey <file>` reads one. **Secret share material
   never touches disk** — it lives only in the simulating process for the duration of a run.
   This draws the clean line for Phase 2: public artifacts on disk are fine now; the
   age/scrypt-encrypted *secret* store is what Phase 2 adds.

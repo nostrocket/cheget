@@ -6,6 +6,6 @@
 // control in the project has regressed.
 
 fn main() {
-    let nonce: tsig::crypto::EphemeralNonces = unimplemented!();
+    let nonce: cheget::crypto::EphemeralNonces = unimplemented!();
     let _ = serde_json::to_vec(&nonce);
 }

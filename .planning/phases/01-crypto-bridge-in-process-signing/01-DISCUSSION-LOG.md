@@ -101,7 +101,7 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | Real skeleton over in-memory transport | Real clap tree wired to in-memory Transport stub | ✓ |
-| Library + harness, only `tsig address` real | Crypto lib + integration harness; minimal CLI | |
+| Library + harness, only `cheget address` real | Crypto lib + integration harness; minimal CLI | |
 | Full clap tree, Phase 1 paths only functional | Whole persona tree stubbed; rest "not yet implemented" | |
 
 **User's choice:** Real subcommand skeleton over the in-memory transport stub.
@@ -115,7 +115,7 @@
 | Single-process whole ceremony | One invocation runs DKG→address→sign→confirm inline | |
 | Ephemeral session dir | Temp dir holds public + unencrypted secret material | |
 
-**User's choice:** Plaintext public artifacts + in-memory secrets; `tsig address --pubkey <file>`.
+**User's choice:** Plaintext public artifacts + in-memory secrets; `cheget address --pubkey <file>`.
 **Notes:** Draws the clean line for Phase 2 (public on disk OK; encrypted secret store is Phase 2).
 
 ---

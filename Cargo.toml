@@ -1,5 +1,5 @@
 [package]
-name = "tsig"
+name = "cheget"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
@@ -7,11 +7,11 @@ description = "51-of-100 FROST Taproot signing CLI (participant / coordinator / 
 license = "MIT OR Apache-2.0"
 
 [[bin]]
-name = "tsig"
+name = "cheget"
 path = "src/main.rs"
 
 [lib]
-name = "tsig"
+name = "cheget"
 path = "src/lib.rs"
 
 [dependencies]

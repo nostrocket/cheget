@@ -1,6 +1,6 @@
-# tsig
+# cheget
 
-`tsig` is a single-binary Rust command-line tool that lets a fixed **51-of-100**
+`cheget` is a single-binary Rust command-line tool that lets a fixed **51-of-100**
 group jointly control one Bitcoin Taproot address using FROST threshold Schnorr
 signatures (RFC 9591, secp256k1, BIP340/341 key-path spend). On-chain, its spends
 are indistinguishable from ordinary single-sig. The CLI is organized into three
@@ -50,7 +50,7 @@ simulated participants in one process; signing runs the coordinator and all
 signers in-process against the in-memory transport stub.
 
 **CLI status (honest):** the clap persona tree (participant / coordinator /
-watcher) is scaffolded in `src/cli/`, but only `tsig watcher address` — which
+watcher) is scaffolded in `src/cli/`, but only `cheget watcher address` — which
 prints the group's BIP341 P2TR address from a public-key-package file — is wired
 end-to-end from the command line. The `keygen` and `sign` flows exist as the
 in-process, test-driven paths (`tests/inproc_sign*.rs`, `tests/dkg_*.rs`); their
@@ -103,7 +103,7 @@ See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for the full phase breakdown.
 
 ## Architecture
 
-`tsig` is a layered, trait-seamed monolith built bottom-up (see `src/lib.rs`):
+`cheget` is a layered, trait-seamed monolith built bottom-up (see `src/lib.rs`):
 
 - **`bridge`** — pure, I/O-free: the single canonical frost→rust-bitcoin key seam
   (`VerifyingKey` → x-only → `XOnlyPublicKey` → BIP341 P2TR + output key `Q`).

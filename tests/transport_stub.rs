@@ -5,7 +5,7 @@
 //! (recipient-scoped) delivery. This stub is what 01-04's signing session
 //! publishes commitments / packages / shares over.
 
-use tsig::transport::{Envelope, Filter, InMemoryTransport, MessageClass, Seat, Transport};
+use cheget::transport::{Envelope, Filter, InMemoryTransport, MessageClass, Seat, Transport};
 
 fn commitments(seat: u16, round: u32, payload: &[u8]) -> Envelope {
     Envelope::broadcast(

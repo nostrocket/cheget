@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** tsig — 51-of-100 FROST Taproot Signing CLI
+**Project:** cheget — 51-of-100 FROST Taproot Signing CLI
 **Domain:** Rust CLI — FROST threshold-Schnorr, Bitcoin Taproot key-path signing, Nostr transport, large-membership (t=51/n=100)
 **Researched:** 2026-07-10
 **Confidence:** HIGH
 
 ## Executive Summary
 
-`tsig` is a single-binary Rust CLI that lets a fixed 51-of-100 group jointly control one Bitcoin Taproot address via FROST threshold Schnorr (RFC 9591 / BIP340/341 key-path). On-chain its spends are indistinguishable from single-sig. The way experts build this class of tool is now settled: the entire cryptographic layer is the NCC-audited `frost-secp256k1-tr` crate (>=3.0), the address/signature bridge goes through `rust-bitcoin`, and ceremony traffic rides `nostr-sdk` over self-hosted relays. Research confirmed the SPEC's stack is correct and current at pinned versions — no correction needed — with one structural fact that drives the whole build: **FROST and rust-bitcoin do not share a curve crate.** FROST uses pure-Rust `k256`; rust-bitcoin uses the `secp256k1` C bindings. There is no Cargo version to align between them, so the frost->bitcoin key bridge is strictly **byte-level** (33-byte SEC1 -> x-only 32B -> `XOnlyPublicKey`), pinned by a mandatory round-trip test.
+`cheget` is a single-binary Rust CLI that lets a fixed 51-of-100 group jointly control one Bitcoin Taproot address via FROST threshold Schnorr (RFC 9591 / BIP340/341 key-path). On-chain its spends are indistinguishable from single-sig. The way experts build this class of tool is now settled: the entire cryptographic layer is the NCC-audited `frost-secp256k1-tr` crate (>=3.0), the address/signature bridge goes through `rust-bitcoin`, and ceremony traffic rides `nostr-sdk` over self-hosted relays. Research confirmed the SPEC's stack is correct and current at pinned versions — no correction needed — with one structural fact that drives the whole build: **FROST and rust-bitcoin do not share a curve crate.** FROST uses pure-Rust `k256`; rust-bitcoin uses the `secp256k1` C bindings. There is no Cargo version to align between them, so the frost->bitcoin key bridge is strictly **byte-level** (33-byte SEC1 -> x-only 32B -> `XOnlyPublicKey`), pinned by a mandatory round-trip test.
 
 The recommended approach is a **layered, trait-seamed monolith** built **bridge-first**: prove the frost<->rust-bitcoin bridge and an in-process 51-of-100 signature — with zero transport, node RPC, or persistence — before any relay work exists. This directly de-risks the highest-value integration bug class and matches the PROJECT decision to prove the crypto bridge early. The crypto core and bridge are pure and I/O-free (the small, auditable, reproducible trusted computing base); chain, transport, and storage sit behind traits so orchestration runs identically in-process (tests), over files (air-gapped), or over Nostr/Core. That single seam is what lets the value be proven before the O(n^2) DKG transport is even attempted.
 

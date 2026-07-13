@@ -4,7 +4,7 @@
 **Researched:** 2026-07-10
 **Confidence:** HIGH (spec-derived + curated threshold-signature failure-mode literature in-repo)
 
-> These are the concrete, domain-specific ways `tsig`-class systems go catastrophically
+> These are the concrete, domain-specific ways `cheget`-class systems go catastrophically
 > wrong. Each expands a normative rule from SPEC §11 (or a known failure mode from the
 > threshold-Schnorr / Taproot literature) into: what breaks, why people do it, structural
 > prevention, early-warning signs, and the milestone (M1–M5, SPEC §13) that must close it.
@@ -299,12 +299,12 @@ reuse one as the other, "to save a keypair." Consequences:
 
 **Why it happens:**
 Convenience and apparent elegance: one keypair per member "is simpler." Same curve, same
-libraries, `tsig init` is generating a keypair anyway — why not reuse it for the share?
+libraries, `cheget init` is generating a keypair anyway — why not reuse it for the share?
 Because the transport key is deliberately low-trust and high-exposure, and the share is the
 crown jewel. Mixing trust tiers on one key destroys the model.
 
 **How to avoid (structural):**
-- **Generate the Nostr identity keypair independently at `tsig init`** with its own RNG
+- **Generate the Nostr identity keypair independently at `cheget init`** with its own RNG
   draw, stored separately, never fed into any DKG/dealer/refresh input (SPEC §7, §11.6a).
 - **No shared derivation seed.** The FROST share comes from the ceremony; the Nostr key
   comes from `init`. There is no common master secret from which both descend.
@@ -320,7 +320,7 @@ crown jewel. Mixing trust tiers on one key destroys the model.
 - A master seed that generates both the transport key and share-related randomness.
 
 **Phase to address:** **M2** (Nostr identity introduced with transport) — get the
-separation right when `tsig init` is first written; re-audit in **M5**.
+separation right when `cheget init` is first written; re-audit in **M5**.
 
 ---
 
@@ -845,5 +845,5 @@ out-of-window events. **Phase:** M2, adversarial test in M5 (replayed envelopes,
 - **.planning/PROJECT.md** — security model, epoch discipline, key decisions. [HIGH]
 
 ---
-*Pitfalls research for: FROST Taproot signing CLI (tsig) at t=51/n=100*
+*Pitfalls research for: FROST Taproot signing CLI (cheget) at t=51/n=100*
 *Researched: 2026-07-10*

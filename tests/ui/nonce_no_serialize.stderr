@@ -1,8 +1,8 @@
 warning: unreachable statement
   --> tests/ui/nonce_no_serialize.rs:10:5
    |
- 9 |     let nonce: tsig::crypto::EphemeralNonces = unimplemented!();
-   |                                                ---------------- any code following this expression is unreachable
+ 9 |     let nonce: cheget::crypto::EphemeralNonces = unimplemented!();
+   |                                                  ---------------- any code following this expression is unreachable
 10 |     let _ = serde_json::to_vec(&nonce);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
    |

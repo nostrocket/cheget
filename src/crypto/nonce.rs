@@ -1,5 +1,5 @@
 //! Non-serializable signing-nonce newtype — the single highest-severity
-//! structural control in `tsig` (SIGN-05).
+//! structural control in `cheget` (SIGN-05).
 //!
 //! Reusing or persisting a FROST signing nonce across two different sighashes
 //! gives an adversary (including a malicious coordinator who observes every

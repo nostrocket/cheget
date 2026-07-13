@@ -71,7 +71,7 @@ via `RUSTFLAGS="-C target-cpu=native"`, never committed.
 
 ## Benchmark — medium scale, release build (t=101, n=200)
 
-Measured against the **library** fn `tsig::crypto::run_inprocess_dkg(101, 200)`
+Measured against the **library** fn `cheget::crypto::run_inprocess_dkg(101, 200)`
 via a throwaway `#[test]` timer (created, run, deleted — repo tree left clean).
 The `dkg_100_correctness` test was intentionally **not** used for before/after
 because its loop is inlined and already parallel and does not call the library

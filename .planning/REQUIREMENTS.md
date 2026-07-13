@@ -1,4 +1,4 @@
-# Requirements: tsig
+# Requirements: cheget
 
 **Defined:** 2026-07-10
 **Core Value:** A group of 100 can jointly control one Bitcoin address (any 51 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
@@ -12,13 +12,13 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [x] **KEY-01**: Operator can generate a group key via DKG (`dkg::part1/2/3`) producing a `KeyPackage` + `PublicKeyPackage` whose verifying key is the Taproot internal key `P` (DKG is the only keygen path)
 - [x] **KEY-02**: The same DKG routines run in-process on a single host with all participants simulated and no transport, for fast local testing and to prove the bridge + signing end-to-end (M1 keygen path; no dealer mode)
 - [x] **KEY-03**: A byte-level round-trip test pins the frost→rust-bitcoin key bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness
-- [x] **KEY-04**: `tsig address [--key active|standby]` prints the BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across all refresh epochs
+- [x] **KEY-04**: `cheget address [--key active|standby]` prints the BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across all refresh epochs
 - [x] **KEY-05**: Each participant confirms the group verifying key to the coordinator after keygen; any mismatch aborts the ceremony
 - [x] **KEY-06**: DKG generates the full n=100 share set in-process on a single host with no transport, producing 100 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test)
 
 ### Signing (SIGN)
 
-- [x] **SIGN-01**: Coordinator can run a signing session from a PSBT (`tsig session sign --psbt <file> [--key active]`), computing the BIP341 key-spend sighash per input (`SighashCache::taproot_key_spend_signature_hash`, default sighash type)
+- [x] **SIGN-01**: Coordinator can run a signing session from a PSBT (`cheget session sign --psbt <file> [--key active]`), computing the BIP341 key-spend sighash per input (`SighashCache::taproot_key_spend_signature_hash`, default sighash type)
 - [x] **SIGN-02**: Coordinator selects 51 live participants via liveness poll and runs FROST round 1 (`round1::commit`) collecting `SigningCommitments`
 - [x] **SIGN-03**: Participants run round 2 (`round2::sign_with_tweak`); coordinator aggregates with the taproot tweak (`aggregate_with_tweak(…, merkle_root: None)`) into a 64-byte BIP340 signature
 - [x] **SIGN-04**: Coordinator verifies the aggregated BIP340 signature against the output key `Q`, finalizes the PSBT, and prints the raw tx (broadcast is operator-driven or `--broadcast` via the configured node)
@@ -28,7 +28,7 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 
 ### Transport — Nostr (TRAN)
 
-- [ ] **TRAN-01**: `tsig init` generates a dedicated Nostr identity keypair (independent of, and never derived from, FROST material) and prints the npub for out-of-band roster registration
+- [ ] **TRAN-01**: `cheget init` generates a dedicated Nostr identity keypair (independent of, and never derived from, FROST material) and prints the npub for out-of-band roster registration
 - [ ] **TRAN-02**: Protocol messages are published as signed Nostr events, one custom kind per message class (`ceremony-open`, `round1-package`, `round2-bundle`, `commitments`, `signature-share`, `confirmation`, `session-control`), tagged for ceremony/session/round/seat binding
 - [ ] **TRAN-03**: Confidential payloads (DKG round-2 shares, enroll/repair deltas) are encrypted with NIP-44 v2 to the recipient npub inside the signed event
 - [ ] **TRAN-04**: Every event is published to all configured relays (≥3 self-hosted); readers merge and dedup by event id; events from npubs outside the pinned roster are discarded client-side (relays never trusted to filter)
@@ -39,29 +39,29 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 
 ### Rotation (ROT)
 
-- [ ] **ROT-01**: Coordinator can run a refresh (`tsig ceremony refresh --remove <ids> [--key active|standby]`) using refresh-DKG (`refresh_dkg_part1/part2/refresh_dkg_shares`), removing any identifier not included, with all remaining holders participating
+- [ ] **ROT-01**: Coordinator can run a refresh (`cheget ceremony refresh --remove <ids> [--key active|standby]`) using refresh-DKG (`refresh_dkg_part1/part2/refresh_dkg_shares`), removing any identifier not included, with all remaining holders participating
 - [ ] **ROT-02**: Every participant verifies, client-side, that the new `PublicKeyPackage` verifying key equals the old one after refresh; mismatch aborts and discards the new share (never trust the coordinator's word)
-- [ ] **ROT-03**: Coordinator can enroll a new member (`tsig ceremony enroll --seat <id> --new-member <pubkey>`) via repair/RTS (`repairable::repair_share_part1/2/3`) against a fresh identifier, immediately followed by a refresh in the same ceremony window (proactivizing helper knowledge)
-- [ ] **ROT-04**: Coordinator can repair a lost share for an existing seat (`tsig ceremony repair --seat <id>`) with ≥51 helpers, and the recovering member verifies against the group `PublicKeyPackage`
+- [ ] **ROT-03**: Coordinator can enroll a new member (`cheget ceremony enroll --seat <id> --new-member <pubkey>`) via repair/RTS (`repairable::repair_share_part1/2/3`) against a fresh identifier, immediately followed by a refresh in the same ceremony window (proactivizing helper knowledge)
+- [ ] **ROT-04**: Coordinator can repair a lost share for an existing seat (`cheget ceremony repair --seat <id>`) with ≥51 helpers, and the recovering member verifies against the group `PublicKeyPackage`
 - [ ] **ROT-05**: Every completed refresh/enroll increments `epoch`; share files are tagged `(key_id, epoch, identifier)`; signing sessions bind `(key_id, epoch)` and reject mixed-epoch shares early with a clear error
-- [ ] **ROT-06**: `tsig share status` lists held shares (key_id, epoch, state); at steady state each participant holds exactly two — one ACTIVE, one STANDBY
+- [ ] **ROT-06**: `cheget share status` lists held shares (key_id, epoch, state); at steady state each participant holds exactly two — one ACTIVE, one STANDBY
 
 ### Lifecycle & Revocation (LIFE)
 
-- [ ] **LIFE-01**: Coordinator can pre-generate the next (STANDBY) key via a full ceremony (`tsig standby new`), kept refreshed on the same cadence as the active key
-- [ ] **LIFE-02**: `tsig sweep [--to standby] [--feerate <sat/vb>]` builds one RBF-enabled consolidation tx spending ALL active UTXOs to the standby address and signs it via the signing session flow against ACTIVE
+- [ ] **LIFE-01**: Coordinator can pre-generate the next (STANDBY) key via a full ceremony (`cheget standby new`), kept refreshed on the same cadence as the active key
+- [ ] **LIFE-02**: `cheget sweep [--to standby] [--feerate <sat/vb>]` builds one RBF-enabled consolidation tx spending ALL active UTXOs to the standby address and signs it via the signing session flow against ACTIVE
 - [ ] **LIFE-03**: On sweep confirmation (depth ≥ 6): ACTIVE→RETIRED, STANDBY→ACTIVE rollover; retired share material may be kept briefly for audit then deleted best-effort (no security claim rests on the deletion)
-- [ ] **LIFE-04**: After rollover, `tsig watch` nags until a new STANDBY exists
+- [ ] **LIFE-04**: After rollover, `cheget watch` nags until a new STANDBY exists
 
 ### Policy & Watch (POL)
 
-- [ ] **POL-01**: `tsig policy show|set` manages `value_cap`, `churn_budget` (default 50), `max_epochs` (default 24), and `standby_max_age` (default 90d)
-- [ ] **POL-02**: `tsig watch --node <rpc-url>` evaluates policy and is cron/CI-friendly: exit 0 ok / exit 2 sweep-due, emitting a JSON report on stdout when balance > value_cap OR distinct former holders since last DKG > churn_budget OR epochs since DKG > max_epochs
+- [ ] **POL-01**: `cheget policy show|set` manages `value_cap`, `churn_budget` (default 50), `max_epochs` (default 24), and `standby_max_age` (default 90d)
+- [ ] **POL-02**: `cheget watch --node <rpc-url>` evaluates policy and is cron/CI-friendly: exit 0 ok / exit 2 sweep-due, emitting a JSON report on stdout when balance > value_cap OR distinct former holders since last DKG > churn_budget OR epochs since DKG > max_epochs
 - [ ] **POL-03**: STANDBY older than `standby_max_age` forces regeneration
 
 ### Storage & Chain (STOR)
 
-- [ ] **STOR-01**: Participant storage (`~/.tsig/`) holds the identity keypair and per-key-per-epoch `KeyPackage`+`PublicKeyPackage` encrypted at rest (age/scrypt) and zeroized in memory after use
+- [ ] **STOR-01**: Participant storage (`~/.cheget/`) holds the identity keypair and per-key-per-epoch `KeyPackage`+`PublicKeyPackage` encrypted at rest (age/scrypt) and zeroized in memory after use
 - [ ] **STOR-02**: Ceremony round secrets (DKG parts) are checkpointed encrypted between rounds of the same ceremony; signing nonces are never persisted (the sole exception)
 - [ ] **STOR-03**: Coordinator state is SQLite (rusqlite): roster (identifier ↔ npub ↔ status ↔ join/leave epochs), ceremony transcripts, session logs, policy config, churn ledger
 - [x] **STOR-04**: Chain access is behind a trait with a Bitcoin Core JSON-RPC backend (`bitcoincore-rpc`, watch-only `tr(<internal-key>)` descriptor import) and an Esplora (`esplora-client`) alternative for UTXO listing, broadcast, and fee estimation

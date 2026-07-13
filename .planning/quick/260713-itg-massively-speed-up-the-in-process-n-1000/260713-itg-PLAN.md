@@ -19,7 +19,7 @@ must_haves:
   key_links:
     - "src/crypto/keygen.rs::run_inprocess_dkg_with_rng"
     - "tests/dkg_100_correctness.rs (reference parallel pattern already used in the ignored test)"
-    - "tests/inproc_sign_100.rs (TSIG_SIGN_T/TSIG_SIGN_N — calls library run_inprocess_dkg via common::run_confirmed_key_spend)"
+    - "tests/inproc_sign_100.rs (CHEGET_SIGN_T/CHEGET_SIGN_N — calls library run_inprocess_dkg via common::run_confirmed_key_spend)"
 ---
 
 # Quick Task 260713-itg: Speed up the in-process n=100 FROST DKG simulation
@@ -47,7 +47,7 @@ invariant.
   call part2/part3, then re-`insert` it. Port that pattern into the library using
   rayon's `map_with` (per-worker cloned state). Do NOT edit that test file.
 - `tests/inproc_sign_100.rs` → `common::run_confirmed_key_spend(t,n)` →
-  `run_inprocess_dkg(t,n)` (the library fn), so `TSIG_SIGN_T=101 TSIG_SIGN_N=200
+  `run_inprocess_dkg(t,n)` (the library fn), so `CHEGET_SIGN_T=101 CHEGET_SIGN_N=200
   cargo test --release --test inproc_sign_100 -- --ignored` exercises the code we
   change. NOTE: that test also spawns a regtest bitcoind (constant overhead). The
   `dkg_100_correctness` test does NOT call the library (its loop is inlined and
@@ -126,7 +126,7 @@ opt-level = 3
   dkg_100_correctness, its loop is already parallel and does not call the lib):
   write a throwaway bench in the SCRATCHPAD (outside the repo tree) e.g. a tiny
   `examples/`-style or a `#[test]` you add-then-remove, OR simplest: a scratch
-  integration invocation timing `tsig::crypto::run_inprocess_dkg(101, 200)` with
+  integration invocation timing `cheget::crypto::run_inprocess_dkg(101, 200)` with
   `std::time::Instant`. Time AFTER (parallel). Then `git stash` the keygen.rs
   change, rebuild, time BEFORE (sequential), `git stash pop`. Keep the bench file
   in the scratchpad only; leave the repo tree clean. Report both wall-clock
