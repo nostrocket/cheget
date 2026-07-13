@@ -3,7 +3,7 @@ name = "tsig"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
-description = "501-of-1000 FROST Taproot signing CLI (participant / coordinator / watcher)"
+description = "51-of-100 FROST Taproot signing CLI (participant / coordinator / watcher)"
 license = "MIT OR Apache-2.0"
 
 [[bin]]
@@ -39,7 +39,7 @@ lto = "fat"
 codegen-units = 1
 opt-level = 3
 # NOTE (reproducible builds): do NOT add target-cpu=native here — it breaks the
-# 1000-verifier reproducibility requirement. The nightly measurement machine may
+# 100-verifier reproducibility requirement. The nightly measurement machine may
 # opt in locally/ephemerally via RUSTFLAGS="-C target-cpu=native", never committed.
 
 [dev-dependencies]
