@@ -1,14 +1,36 @@
 ---
-status: pending
+status: partial
 phase: 02-persistence-storage
 source: [02-VERIFICATION.md]
 started: 2026-07-14T14:57:11Z
-updated: 2026-07-14T14:57:11Z
+updated: 2026-07-14T15:12:00Z
 ---
 
 ## Current Test
 
-Test 1 — re-confirm the interactive no-echo confirm-twice prompt on the post-fix code.
+[testing paused — 1 item outstanding: Test 1]
+
+## How to Resume (after any absence)
+
+**One command:** run `/gsd-verify-work 02` in this repo.
+
+It reads this file, sees `status: partial` with Test 1 still `result: pending`, and
+drops you straight back at the Test 1 checkpoint below — no re-setup, no re-testing of
+anything already done. GSD's phase state already points here: Phase 02 is `executed` with
+`verification_status: human_needed`, and its `next_command` is `/gsd-verify-work 02`.
+
+**What Test 1 needs (the only thing left):** build the post-fix code (commit `c2c3a83`
+or later) and run `cheget` against a **fresh** store at a **real terminal** to trigger the
+new-store passphrase prompt. Confirm the UX matches the Expected block in Test 1 below
+(no echo; prompted twice; mismatch rejected; unrecoverable-passphrase warning prints first;
+unlock path prompts once). Reply `yes`/`next` to pass, or describe any difference.
+
+Why it can't be automated: no-echo is a runtime TTY property and the prompt impl is
+`#[cfg(not(test))]`, so it can't be observed in a headless build (D5 human_judgment).
+
+**When Test 1 passes:** verify-work flips `02-VERIFICATION.md` status to `passed`, marks
+Phase 02 complete in ROADMAP.md / STATE.md, and offers the next-phase options. Nothing else
+in Phase 02 is outstanding (WR-01 fixed, WR-03 accepted — see Prior cycle below).
 
 ## Tests
 
