@@ -82,14 +82,15 @@ Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
   2. Ceremony round secrets (DKG parts) are checkpointed encrypted between rounds of the same ceremony, and signing nonces are structurally excluded from persistence — the sole never-persisted exception (STOR-02)
   3. Coordinator state persists in SQLite (rusqlite): roster (identifier ↔ npub ↔ status ↔ join/leave epochs), ceremony transcripts, session logs, policy config, and churn ledger (STOR-03)
 
-**Plans**: 4/4 plans complete
+**Plans**: 5 plans (4 original + 1 gap closure)
 
-Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel):
+Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure: 02-05):
 
 - [x] 02-01-PLAN.md [W1] — Store foundation: pinned deps + MSRV-1.85 gate, StoreError/StoreRoot, atomic write (D-07), age/scrypt crypto (D-06) + PassphraseSource seam (D-01/D-03) (STOR-01)
 - [x] 02-02-PLAN.md [W2] — Participant secret store: manifest (D-05), encrypted shares + plaintext public package, IdentityKeypair + npub with structural FROST separation (D-12/D-13/D-15) (STOR-01)
 - [x] 02-03-PLAN.md [W3] — Encrypted DKG checkpoint store: type-restricted dkg SecretPackage persist, wipe/keep (D-08/D-10), nonce-exclusion guard + n=100 harness stub (STOR-02)
 - [x] 02-04-PLAN.md [W3] — Coordinator SQLite store (roster/transcripts/logs/policy/churn, real npubs D-15, public-only D-11) + CLI share-status wiring + headless PassphraseSource test (STOR-03)
+- [ ] 02-05-PLAN.md [gap] — WR-01 fix: zeroize the transient rpassword passphrase buffers in passphrase.rs so plaintext is wiped on drop (STOR-01)
 
 ### Phase 3: DKG at Scale — Local
 
