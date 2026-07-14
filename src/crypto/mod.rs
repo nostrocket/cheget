@@ -25,4 +25,4 @@ pub use keygen::{
 };
 pub use nonce::EphemeralNonces;
 pub use sign::{aggregate, signature_bytes, verify_against_q, AggregateError};
-pub use types::{Epoch, KeyId, SeatId};
+pub use types::{Epoch, KeyId, KeyIdError, SeatId};

@@ -72,7 +72,7 @@ impl ShareEntry {
         created_at: u64,
     ) -> Self {
         Self {
-            key_id: key_id.0.clone(),
+            key_id: key_id.as_str().to_string(),
             epoch: epoch.0,
             seat: seat_hex(seat),
             state,
@@ -82,7 +82,7 @@ impl ShareEntry {
 
     /// True if this entry carries exactly the given `(key_id, epoch, seat)` tag.
     fn matches(&self, key_id: &KeyId, epoch: Epoch, seat: &SeatId) -> bool {
-        self.key_id == key_id.0 && self.epoch == epoch.0 && self.seat == seat_hex(seat)
+        self.key_id == key_id.as_str() && self.epoch == epoch.0 && self.seat == seat_hex(seat)
     }
 }
 

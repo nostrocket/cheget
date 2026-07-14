@@ -140,7 +140,7 @@ impl ParticipantStore {
         epoch: Epoch,
         group: &PublicKeyPackage,
     ) -> Result<(), StoreError> {
-        let envelope = PubkeyEnvelope::from_package(key_id.0.clone(), epoch.0, group)
+        let envelope = PubkeyEnvelope::from_package(key_id.as_str(), epoch.0, group)
             .map_err(map_envelope_err)?;
         let json = serde_json::to_vec_pretty(&envelope)?;
         let path = self.public_path(key_id, epoch);
@@ -193,7 +193,7 @@ impl ParticipantStore {
     fn share_path(&self, tag: &ShareTag) -> PathBuf {
         self.root
             .join("shares")
-            .join(&tag.key_id.0)
+            .join(tag.key_id.as_str())
             .join(format!("epoch-{}", tag.epoch.0))
             .join(format!("seat-{}.age", seat_hex(&tag.seat)))
     }
@@ -201,7 +201,7 @@ impl ParticipantStore {
     fn public_path(&self, key_id: &KeyId, epoch: Epoch) -> PathBuf {
         self.root
             .join("pubkey")
-            .join(&key_id.0)
+            .join(key_id.as_str())
             .join(format!("epoch-{}.json", epoch.0))
     }
 }
