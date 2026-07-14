@@ -24,6 +24,11 @@ use std::path::{Path, PathBuf};
 use frost_secp256k1_tr as frost;
 
 pub mod atomic;
+pub mod crypto;
+pub mod passphrase;
+
+pub use crypto::{decrypt_secret, encrypt_secret};
+pub use passphrase::{InCodePassphrase, PassphraseSource};
 
 /// Environment variable that overrides the store root path (testability / CI
 /// seam). It is a **path** override only — never a passphrase source (D-01/D-03).
