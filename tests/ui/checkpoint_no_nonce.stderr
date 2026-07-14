@@ -1,0 +1,31 @@
+error[E0308]: mismatched types
+  --> tests/ui/checkpoint_no_nonce.rs:20:41
+   |
+20 |     let _ = store.put_round1(cid, seat, nonce);
+   |                   ----------            ^^^^^ expected `&SecretPackage<Secp256K1Sha256TR>`, found `&EphemeralNonces`
+   |                   |
+   |                   arguments to this method are incorrect
+   |
+   = note: expected reference `&frost_core::keys::dkg::round1::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>`
+              found reference `&EphemeralNonces`
+note: method defined here
+  --> src/store/checkpoint.rs
+   |
+   |     pub fn put_round1(
+   |            ^^^^^^^^^^
+
+error[E0308]: mismatched types
+  --> tests/ui/checkpoint_no_nonce.rs:29:41
+   |
+29 |     let _ = store.put_round2(cid, seat, nonce);
+   |                   ----------            ^^^^^ expected `&SecretPackage<Secp256K1Sha256TR>`, found `&EphemeralNonces`
+   |                   |
+   |                   arguments to this method are incorrect
+   |
+   = note: expected reference `&frost_core::keys::dkg::round2::SecretPackage<frost_secp256k1_tr::Secp256K1Sha256TR>`
+              found reference `&EphemeralNonces`
+note: method defined here
+  --> src/store/checkpoint.rs
+   |
+   |     pub fn put_round2(
+   |            ^^^^^^^^^^

@@ -1,0 +1,5 @@
+error[E0599]: no method named `persist` found for reference `&CheckpointStore` in the current scope
+  --> tests/ui/checkpoint_no_generic_persist.rs:15:19
+   |
+15 |     let _ = store.persist(cid, seat, &"any serializable value");
+   |                   ^^^^^^^ method not found in `&CheckpointStore`
