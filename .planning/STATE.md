@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 01
-current_phase_name: crypto-bridge-in-process-signing
+current_phase: 02
+current_phase_name: persistence-storage
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-07-14T08:08:39.748Z"
-last_activity: 2026-07-13
-last_activity_desc: "Completed quick task 260713-pk2: update README with mainnet and regtest usage, fully current"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-07-14T08:37:25.719Z"
+last_activity: 2026-07-14
+last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 9
+  completed_plans: 6
   percent: 14
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-10)
 
 **Core value:** A group of 100 can jointly control one Bitcoin address (any 51 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
-**Current focus:** Phase 01 — crypto-bridge-in-process-signing
+**Current focus:** Phase 02 — persistence-storage
 
 ## Current Position
 
-Phase: 01 (crypto-bridge-in-process-signing) — EXECUTING
-Plan: 5 of 5
+Phase: 02 (persistence-storage) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-07-13 - Completed quick task 260713-pk2: update README with mainnet and regtest usage, fully current
+Last activity: 2026-07-14 — Phase 02 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 40 | 3 tasks | 7 files |
 | Phase 01 P05 | 10 | 2 tasks | 4 files |
 | Phase 01 P04 | 16 | 3 tasks | 13 files |
+| Phase 02 P01 | 11 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [01-01]: Public-artifact envelope (D-09) = frost PublicKeyPackage hex in serde_json with key_id + reserved epoch; cheget address --network defaults to bitcoin
 - [Phase ?]: [01-01]: Pinned stack committed (frost-secp256k1-tr 3.0.0, bitcoin 0.32.101); corepc-node feature 28_0; toolchain 1.96.0 / MSRV 1.85
 - [Phase 01]: [01-05]: Transport trait seam + in-memory stub (D-08); opaque-bytes Envelope shaped for Nostr event kinds; content-derived FNV-1a EnvelopeId seeds Phase-7 dedup; no nostr-sdk type in the seam
+- [Phase ?]: [02-01]: MSRV gate branch (b) — rusqlite 0.40.1→0.37.0 (bundled) and home 0.5.12→0.5.9; full dep set builds on 1.85. 02-04 targets rusqlite 0.37.
+- [Phase ?]: [02-01]: rpassword APPROVED (Task 1); license Apache-2.0 not MIT (benign). No passphrase env/CLI flag ships (D-01/D-03); CHEGET_HOME is path-override only.
+- [Phase ?]: [02-01]: store layer = StoreError (manual idiom) + write_atomic (D-07) + age/scrypt log_n=18 Zeroizing decrypt (D-06) + PassphraseSource seam (interactive/in-code).
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-14T07:20:43.494Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-persistence-storage/02-CONTEXT.md
+Last session: 2026-07-14T08:37:25.715Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
