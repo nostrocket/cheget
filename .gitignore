@@ -1,3 +1,36 @@
+# Rust
 /target
 **/*.rs.bk
 *.pdb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+
+# Environment / secrets (never commit key material)
+.env
+.env.*
+*.pem
+*.key
+
+# Claude Code local (machine-specific settings)
+.claude/settings.local.json
