@@ -454,9 +454,14 @@ Rationale: `identifier` stored as hex of `Identifier.serialize()` is the stable 
 | A7 | `secp256k1::SecretKey` (0.29) is not ZeroizeOnDrop; `non_secure_erase()` exists | Pitfall 5 | If it does zeroize, Zeroizing wrapper is belt-and-suspenders — harmless |
 | A8 | `age::secrecy::SecretString` is re-exported by age 0.11.3 (secrecy 0.10.3) | Pattern 1 | If not re-exported, add `secrecy = "0.10"` explicitly — trivial |
 
-## Open Questions
+## Open Questions (RESOLVED at planning)
 
-1. **rusqlite 0.40.1 vs MSRV 1.85**
+> All three questions were resolved during planning and implemented as concrete tasks; planning did not proceed on any open assumption.
+> - Q1 → **RESOLVED**: 02-01 Task 2 gates on an explicit `cargo +1.85.0 check` with fallback branches (a) keep 0.40.1 / (b) pin older rusqlite / (c) bump MSRV; 02-04 defers schema-locking to it.
+> - Q2 → **RESOLVED**: 02-01 Task 1 picks `rpassword` behind the `PassphraseSource` trait, gated by a blocking-human legitimacy checkpoint before install.
+> - Q3 → **RESOLVED**: 02-03 Task 1 drives `CheckpointStore` against real `dkg::part1/part2` outputs without faking a between-round pause in `run_inprocess_dkg`.
+
+1. **rusqlite 0.40.1 vs MSRV 1.85** — RESOLVED (see above)
    - What we know: rusqlite MSRV policy is "latest stable at release time"; 0.40.1 is May 2026, project pins Rust 1.85.
    - What's unclear: whether `libsqlite3-sys 0.38.1` + rusqlite 0.40.1 actually build on 1.85.
    - Recommendation: run `cargo +1.85.0 check` with the deps added as the first planning task; if it fails, decide between (a) pinning rusqlite ~0.37/0.38 (still `bundled`, older SQLite) or (b) bumping the documented MSRV. Do not lock the schema until this is resolved.
