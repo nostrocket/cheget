@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: crypto-bridge-in-process-signing
 status: verifying
-stopped_at: Phase 1 context gathered
-last_updated: "2026-07-10T12:25:29.050Z"
-last_activity: 2026-07-10
-last_activity_desc: Phase 01 execution started
+stopped_at: Phase 2 context gathered
+last_updated: "2026-07-14T07:20:43.503Z"
+last_activity: 2026-07-13
+last_activity_desc: "Completed quick task 260713-pk2: update README with mainnet and regtest usage, fully current"
 progress:
   total_phases: 7
   completed_phases: 1
@@ -110,6 +110,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-10T12:25:21.099Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-crypto-bridge-in-process-signing/01-CONTEXT.md
+Last session: 2026-07-14T07:20:43.494Z
+Stopped at: Phase 2 context gathered
+Resume file: .planning/phases/02-persistence-storage/02-CONTEXT.md
