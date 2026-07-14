@@ -10,6 +10,8 @@
 //!   (`VerifyingKey` → x-only → `XOnlyPublicKey` → BIP341 P2TR + output key `Q`).
 //! - [`crypto`] — L0, **pure**: frost wrapper (DKG, tweaked signing, nonce type).
 //! - [`chain`] — L2: `ChainBackend` trait + Core RPC / Esplora impls (side-effecting).
+//! - [`store`] — L2: at-rest persistence (age/scrypt encrypt, crash-safe atomic
+//!   write, passphrase seam). Persistence never enters the pure crypto core.
 //! - [`transport`] — L2: `Transport` trait + in-memory stub (the Nostr swap seam).
 //! - [`session`] — L3: two-round signing session; owns nonce lifetime (RAM only).
 //! - [`cli`] — L4: clap persona tree (participant / coordinator / watcher).
@@ -22,4 +24,5 @@ pub mod chain;
 pub mod cli;
 pub mod crypto;
 pub mod session;
+pub mod store;
 pub mod transport;

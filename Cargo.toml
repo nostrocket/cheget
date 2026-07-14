@@ -34,6 +34,25 @@ serde_json = "1"
 # RNG-free, per-seat independent work). Exact-pinned for reproducible builds.
 rayon = "=1.12.0"
 
+# --- Phase 2 persistence-storage layer (src/store/) ---
+# At-rest encryption of shares/identity/checkpoints via the scrypt passphrase
+# recipient (age::scrypt::Recipient/Identity). Sole recipient; never x25519.
+age = "0.11.3"
+# Coordinator SQLite state (roster/transcripts/churn). `bundled` static-links
+# SQLite for reproducible builds; wired in 02-04. Needs a C toolchain in CI.
+rusqlite = { version = "0.37", features = ["bundled"] }
+# Transport-only Nostr identity keypair (independent secp256k1 draw; NEVER
+# derived from FROST material, D-13). `rand` gives OsRng; `std` for the CLI.
+secp256k1 = { version = "0.29.1", features = ["rand", "std"] }
+# npub encoding (NIP-19): Bech32 (NOT Bech32m), HRP `npub`. Wired in 02-02.
+bech32 = "0.11.1"
+# Store-root resolution (~/.cheget), with a CHEGET_HOME override. Avoids the
+# deprecated std::env::home_dir Windows edge cases.
+home = "0.5"
+# No-echo interactive passphrase prompt into a SecretString (D-01, Pitfall 7).
+# Legitimacy verified on crates.io (Task 1 blocking-human gate: APPROVED).
+rpassword = "7"
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
