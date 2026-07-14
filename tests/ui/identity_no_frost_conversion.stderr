@@ -1,0 +1,17 @@
+warning: unreachable statement
+  --> tests/ui/identity_no_frost_conversion.rs:13:5
+   |
+12 |     let share: frost_secp256k1_tr::keys::SigningShare = unimplemented!();
+   |                                                         ---------------- any code following this expression is unreachable
+13 |     let _id: cheget::store::IdentityKeypair = share.into();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+   |
+   = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+error[E0277]: the trait bound `IdentityKeypair: From<frost_core::keys::SigningShare<Secp256K1Sha256TR>>` is not satisfied
+  --> tests/ui/identity_no_frost_conversion.rs:13:53
+   |
+13 |     let _id: cheget::store::IdentityKeypair = share.into();
+   |                                                     ^^^^ the trait `From<frost_core::keys::SigningShare<Secp256K1Sha256TR>>` is not implemented for `IdentityKeypair`
+   |
+   = note: required for `frost_core::keys::SigningShare<Secp256K1Sha256TR>` to implement `Into<IdentityKeypair>`

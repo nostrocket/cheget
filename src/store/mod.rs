@@ -25,11 +25,13 @@ use frost_secp256k1_tr as frost;
 
 pub mod atomic;
 pub mod crypto;
+pub mod identity;
 pub mod manifest;
 pub mod participant;
 pub mod passphrase;
 
 pub use crypto::{decrypt_secret, encrypt_secret};
+pub use identity::IdentityKeypair;
 pub use manifest::{Manifest, ShareEntry, ShareState};
 pub use participant::{ParticipantStore, ShareTag};
 pub use passphrase::{InCodePassphrase, PassphraseSource};
@@ -68,6 +70,9 @@ pub enum StoreError {
     Sqlite(rusqlite::Error),
     /// The store manifest was malformed or referenced a missing file (02-02).
     Manifest(String),
+    /// A persisted transport identity secret was malformed on reload — wrong
+    /// length or not a well-formed secp256k1 scalar (02-02).
+    Identity(String),
     /// An on-disk schema/manifest version is newer or unknown to this build.
     Schema(String),
     /// The user's home directory could not be resolved and no `CHEGET_HOME`
@@ -85,6 +90,7 @@ impl std::fmt::Display for StoreError {
             StoreError::Json(e) => write!(f, "manifest json error: {e}"),
             StoreError::Sqlite(e) => write!(f, "coordinator sqlite error: {e}"),
             StoreError::Manifest(m) => write!(f, "store manifest error: {m}"),
+            StoreError::Identity(m) => write!(f, "store identity error: {m}"),
             StoreError::Schema(m) => write!(f, "store schema error: {m}"),
             StoreError::NoHomeDir => write!(
                 f,
