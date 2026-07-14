@@ -82,13 +82,13 @@ Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
   2. Ceremony round secrets (DKG parts) are checkpointed encrypted between rounds of the same ceremony, and signing nonces are structurally excluded from persistence — the sole never-persisted exception (STOR-02)
   3. Coordinator state persists in SQLite (rusqlite): roster (identifier ↔ npub ↔ status ↔ join/leave epochs), ceremony transcripts, session logs, policy config, and churn ledger (STOR-03)
 
-**Plans**: 1/4 plans executed
+**Plans**: 3/4 plans executed
 
 Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel):
 
 - [x] 02-01-PLAN.md [W1] — Store foundation: pinned deps + MSRV-1.85 gate, StoreError/StoreRoot, atomic write (D-07), age/scrypt crypto (D-06) + PassphraseSource seam (D-01/D-03) (STOR-01)
-- [ ] 02-02-PLAN.md [W2] — Participant secret store: manifest (D-05), encrypted shares + plaintext public package, IdentityKeypair + npub with structural FROST separation (D-12/D-13/D-15) (STOR-01)
-- [ ] 02-03-PLAN.md [W3] — Encrypted DKG checkpoint store: type-restricted dkg SecretPackage persist, wipe/keep (D-08/D-10), nonce-exclusion guard + n=100 harness stub (STOR-02)
+- [x] 02-02-PLAN.md [W2] — Participant secret store: manifest (D-05), encrypted shares + plaintext public package, IdentityKeypair + npub with structural FROST separation (D-12/D-13/D-15) (STOR-01)
+- [x] 02-03-PLAN.md [W3] — Encrypted DKG checkpoint store: type-restricted dkg SecretPackage persist, wipe/keep (D-08/D-10), nonce-exclusion guard + n=100 harness stub (STOR-02)
 - [ ] 02-04-PLAN.md [W3] — Coordinator SQLite store (roster/transcripts/logs/policy/churn, real npubs D-15, public-only D-11) + CLI share-status wiring + headless PassphraseSource test (STOR-03)
 
 ### Phase 3: DKG at Scale — Local
@@ -204,7 +204,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Crypto Bridge & In-Process Signing | 5/5 | Complete   | 2026-07-10 |
-| 2. Persistence & Storage | 1/4 | In Progress|  |
+| 2. Persistence & Storage | 3/4 | In Progress|  |
 | 3. DKG at Scale — Local | 0/2 | Not started | - |
 | 4. Membership Rotation | 0/4 | Not started | - |
 | 5. Key Lifecycle & Revocation | 0/4 | Not started | - |
