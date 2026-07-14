@@ -12,6 +12,8 @@
 //! - [`chain`] — L2: `ChainBackend` trait + Core RPC / Esplora impls (side-effecting).
 //! - [`store`] — L2: at-rest persistence (age/scrypt encrypt, crash-safe atomic
 //!   write, passphrase seam). Persistence never enters the pure crypto core.
+//! - [`coordinator`] — L2: coordinator public SQLite state — no secret material,
+//!   never age-encrypted (D-11).
 //! - [`transport`] — L2: `Transport` trait + in-memory stub (the Nostr swap seam).
 //! - [`session`] — L3: two-round signing session; owns nonce lifetime (RAM only).
 //! - [`cli`] — L4: clap persona tree (participant / coordinator / watcher).
@@ -22,6 +24,7 @@
 pub mod bridge;
 pub mod chain;
 pub mod cli;
+pub mod coordinator;
 pub mod crypto;
 pub mod session;
 pub mod store;
