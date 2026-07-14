@@ -24,12 +24,14 @@ use std::path::{Path, PathBuf};
 use frost_secp256k1_tr as frost;
 
 pub mod atomic;
+pub mod checkpoint;
 pub mod crypto;
 pub mod identity;
 pub mod manifest;
 pub mod participant;
 pub mod passphrase;
 
+pub use checkpoint::{CeremonyId, CheckpointStore};
 pub use crypto::{decrypt_secret, encrypt_secret};
 pub use identity::IdentityKeypair;
 pub use manifest::{Manifest, ShareEntry, ShareState};
