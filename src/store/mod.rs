@@ -25,9 +25,11 @@ use frost_secp256k1_tr as frost;
 
 pub mod atomic;
 pub mod crypto;
+pub mod manifest;
 pub mod passphrase;
 
 pub use crypto::{decrypt_secret, encrypt_secret};
+pub use manifest::{Manifest, ShareEntry, ShareState};
 pub use passphrase::{InCodePassphrase, PassphraseSource};
 
 /// Environment variable that overrides the store root path (testability / CI
