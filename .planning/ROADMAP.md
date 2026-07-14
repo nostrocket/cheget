@@ -82,7 +82,7 @@ Plans (waves: W1=01-01 → W2={01-02,01-03,01-05} parallel → W3=01-04):
   2. Ceremony round secrets (DKG parts) are checkpointed encrypted between rounds of the same ceremony, and signing nonces are structurally excluded from persistence — the sole never-persisted exception (STOR-02)
   3. Coordinator state persists in SQLite (rusqlite): roster (identifier ↔ npub ↔ status ↔ join/leave epochs), ceremony transcripts, session logs, policy config, and churn ledger (STOR-03)
 
-**Plans**: 5 plans (4 original + 1 gap closure)
+**Plans**: 5/5 plans complete
 
 Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure: 02-05):
 
@@ -90,7 +90,7 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
 - [x] 02-02-PLAN.md [W2] — Participant secret store: manifest (D-05), encrypted shares + plaintext public package, IdentityKeypair + npub with structural FROST separation (D-12/D-13/D-15) (STOR-01)
 - [x] 02-03-PLAN.md [W3] — Encrypted DKG checkpoint store: type-restricted dkg SecretPackage persist, wipe/keep (D-08/D-10), nonce-exclusion guard + n=100 harness stub (STOR-02)
 - [x] 02-04-PLAN.md [W3] — Coordinator SQLite store (roster/transcripts/logs/policy/churn, real npubs D-15, public-only D-11) + CLI share-status wiring + headless PassphraseSource test (STOR-03)
-- [ ] 02-05-PLAN.md [gap] — WR-01 fix: zeroize the transient rpassword passphrase buffers in passphrase.rs so plaintext is wiped on drop (STOR-01)
+- [x] 02-05-PLAN.md [gap] — WR-01 fix: zeroize the transient rpassword passphrase buffers in passphrase.rs so plaintext is wiped on drop (STOR-01)
 
 ### Phase 3: DKG at Scale — Local
 
@@ -108,7 +108,7 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
 Plans:
 
 - [ ] 03-01: Scale the in-process DKG to n=100 on one host (no transport); all 100 KeyPackages verify to one group key
-- [ ] 03-02: Measure the O(n²) computation cost locally + persist/reload the full n=100 share set through the Phase 2 stores
+- [x] 03-02: Measure the O(n²) computation cost locally + persist/reload the full n=100 share set through the Phase 2 stores (completed 2026-07-14)
 
 ### Phase 4: Membership Rotation
 
@@ -205,7 +205,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Crypto Bridge & In-Process Signing | 5/5 | Complete   | 2026-07-10 |
-| 2. Persistence & Storage | 4/4 | Complete   | 2026-07-14 |
+| 2. Persistence & Storage | 5/5 | Complete   | 2026-07-14 |
 | 3. DKG at Scale — Local | 0/2 | Not started | - |
 | 4. Membership Rotation | 0/4 | Not started | - |
 | 5. Key Lifecycle & Revocation | 0/4 | Not started | - |
