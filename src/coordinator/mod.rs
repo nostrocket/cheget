@@ -332,10 +332,20 @@ impl CoordinatorStore {
 fn migrate(conn: &Connection) -> Result<(), StoreError> {
     let v: i64 = conn.pragma_query_value(None, "user_version", |r| r.get(0))?;
     if v < 1 {
-        conn.execute_batch(SCHEMA_V1)?;
-        conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        // Apply the schema AND bump user_version in ONE transaction so the step
+        // is all-or-nothing (T-02-17). SQLite DDL is transactional and
+        // `PRAGMA user_version` participates in the enclosing transaction, so a
+        // crash/rollback mid-migration leaves user_version at 0 with NO partial
+        // schema — the next open() cleanly re-runs the whole batch instead of
+        // failing forever on "table already exists". `unchecked_transaction`
+        // gives a `Transaction` from a `&Connection` (migrate does not own a
+        // `&mut`); rusqlite 0.37 API.
+        let tx = conn.unchecked_transaction()?;
+        tx.execute_batch(SCHEMA_V1)?;
+        tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        tx.commit()?;
     }
-    // future: if v < 2 { conn.execute_batch(MIGRATE_V1_TO_V2)?; ... }
+    // future: if v < 2 { let tx = conn.unchecked_transaction()?; ... tx.commit()?; }
     Ok(())
 }
 
@@ -391,6 +401,57 @@ mod tests {
             .pragma_query_value(None, "user_version", |r| r.get(0))
             .unwrap();
         assert_eq!(uv2, SCHEMA_VERSION);
+
+        std::fs::remove_dir_all(path.parent().unwrap()).ok();
+    }
+
+    /// A migration is atomic: if applying `SCHEMA_V1` fails partway, the whole
+    /// step rolls back — `user_version` is NOT advanced and no partial tables
+    /// are left behind (T-02-17). Simulates the exact broken pre-state the old
+    /// non-atomic code could leave (a table already exists while
+    /// `user_version == 0`), then proves the transaction wrapper does not
+    /// half-apply.
+    #[test]
+    fn migrate_is_atomic_on_failure() {
+        let path = temp_db();
+        let conn = Connection::open(&path).unwrap();
+
+        // Pre-create `roster` with user_version still 0 — as a mid-batch crash
+        // under the old code could have left it. Applying SCHEMA_V1 now conflicts
+        // on `CREATE TABLE roster` partway through the batch.
+        conn.execute_batch("CREATE TABLE roster (x INTEGER);").unwrap();
+        let v0: i64 = conn
+            .pragma_query_value(None, "user_version", |r| r.get(0))
+            .unwrap();
+        assert_eq!(v0, 0, "precondition: user_version starts at 0");
+
+        assert!(
+            migrate(&conn).is_err(),
+            "a conflicting migration batch must fail"
+        );
+
+        // The whole transaction rolled back: user_version untouched...
+        let v_after: i64 = conn
+            .pragma_query_value(None, "user_version", |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            v_after, 0,
+            "a failed migration must NOT advance user_version"
+        );
+
+        // ...and none of the later v1 tables were committed.
+        let policy_tables: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master \
+                 WHERE type = 'table' AND name = 'policy_config'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            policy_tables, 0,
+            "a rolled-back migration must NOT leave partial tables"
+        );
 
         std::fs::remove_dir_all(path.parent().unwrap()).ok();
     }
