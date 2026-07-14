@@ -46,8 +46,7 @@ impl InCodePassphrase {
 
 impl PassphraseSource for InCodePassphrase {
     fn passphrase(&self) -> Result<SecretString, StoreError> {
-        let _ = &self.0;
-        unimplemented!("GREEN: clone the fixed SecretString")
+        Ok(self.0.clone())
     }
 }
 
@@ -80,8 +79,22 @@ impl InteractivePassphrase {
 #[cfg(not(test))]
 impl PassphraseSource for InteractivePassphrase {
     fn passphrase(&self) -> Result<SecretString, StoreError> {
-        let _ = self.confirm;
-        unimplemented!("GREEN: rpassword no-echo read + confirm-twice on create")
+        if !self.confirm {
+            let entered = rpassword::prompt_password("Store passphrase: ")?;
+            return Ok(SecretString::from(entered));
+        }
+
+        // New-store creation: warn, then confirm-twice-and-match (D-04).
+        eprintln!(
+            "WARNING: this passphrase encrypts your identity key and every share.\n\
+             A lost passphrase makes them unrecoverable — there is no reset."
+        );
+        let first = rpassword::prompt_password("New store passphrase: ")?;
+        let second = rpassword::prompt_password("Confirm store passphrase: ")?;
+        if first != second {
+            return Err(StoreError::Age("passphrases did not match".into()));
+        }
+        Ok(SecretString::from(first))
     }
 }
 

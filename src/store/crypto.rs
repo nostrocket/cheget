@@ -35,8 +35,9 @@ pub fn encrypt_secret(
     passphrase: &SecretString,
     plaintext: &[u8],
 ) -> Result<Vec<u8>, StoreError> {
-    let _ = (passphrase, plaintext, SCRYPT_LOG_N);
-    unimplemented!("GREEN: age::scrypt::Recipient + age::encrypt")
+    let mut recipient = age::scrypt::Recipient::new(passphrase.clone());
+    recipient.set_work_factor(SCRYPT_LOG_N);
+    age::encrypt(&recipient, plaintext).map_err(|e| StoreError::Age(e.to_string()))
 }
 
 /// Decrypt `ciphertext` with `passphrase`, returning the plaintext wrapped in
@@ -49,8 +50,10 @@ pub fn decrypt_secret(
     passphrase: &SecretString,
     ciphertext: &[u8],
 ) -> Result<Zeroizing<Vec<u8>>, StoreError> {
-    let _ = (passphrase, ciphertext);
-    unimplemented!("GREEN: age::scrypt::Identity + age::decrypt → Zeroizing")
+    let identity = age::scrypt::Identity::new(passphrase.clone());
+    let plaintext =
+        age::decrypt(&identity, ciphertext).map_err(|e| StoreError::Age(e.to_string()))?;
+    Ok(Zeroizing::new(plaintext))
 }
 
 #[cfg(test)]
