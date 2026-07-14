@@ -173,6 +173,19 @@ impl ParticipantStore {
         }
     }
 
+    /// Read the plaintext share manifest at `root` with **no passphrase** (D-05).
+    ///
+    /// This is the unlock-free read path `share status` uses: it never
+    /// constructs a [`PassphraseSource`], so listing held shares can never
+    /// prompt or touch a secret. An absent manifest reads as empty.
+    pub fn read_manifest(root: &Path) -> Result<Manifest, StoreError> {
+        match std::fs::read(root.join("manifest.json")) {
+            Ok(bytes) => Manifest::from_json_bytes(&bytes),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Manifest::new()),
+            Err(e) => Err(StoreError::Io(e)),
+        }
+    }
+
     fn manifest_path(&self) -> PathBuf {
         self.root.join("manifest.json")
     }

@@ -11,7 +11,10 @@ pub mod address;
 pub mod keygen;
 pub mod sign;
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
+
+use crate::coordinator::CoordinatorStore;
+use crate::store::{ParticipantStore, StoreError, StoreRoot};
 
 /// Result type for CLI handlers.
 pub type CliResult = Result<(), Box<dyn std::error::Error>>;
@@ -46,6 +49,9 @@ pub enum ParticipantCmd {
     Keygen(keygen::KeygenArgs),
     /// Join a signing session (round1 commit + round2 sign). (Wired in 01-04.)
     Sign(sign::SignArgs),
+    /// List held shares from the store — reads the plaintext manifest with NO
+    /// unlock and no `--pubkey` file (D-05); never prompts for a passphrase.
+    ShareStatus(ShareStatusArgs),
 }
 
 /// Coordinator subcommands.
@@ -55,6 +61,79 @@ pub enum CoordinatorCmd {
     Keygen(keygen::KeygenArgs),
     /// Run a signing session from a PSBT. (Wired in 01-04.)
     Sign(sign::SignArgs),
+    /// List the roster from the coordinator's public SQLite store (STOR-03).
+    Roster(RosterArgs),
+}
+
+/// Arguments for `participant share-status`.
+#[derive(Debug, Args)]
+pub struct ShareStatusArgs {
+    /// Optional store root override (defaults to `CHEGET_HOME` or `~/.cheget`).
+    #[arg(long)]
+    pub home: Option<std::path::PathBuf>,
+}
+
+/// Arguments for `coordinator roster`.
+#[derive(Debug, Args)]
+pub struct RosterArgs {
+    /// Group-key label to list (`active` | `standby`).
+    #[arg(long, default_value = "active")]
+    pub key_id: String,
+    /// Optional store root override (defaults to `CHEGET_HOME` or `~/.cheget`).
+    #[arg(long)]
+    pub home: Option<std::path::PathBuf>,
+}
+
+/// Resolve the store root, honoring an explicit `--home` override over the
+/// `CHEGET_HOME`/`~/.cheget` resolution.
+fn resolve_root(home: Option<std::path::PathBuf>) -> Result<std::path::PathBuf, StoreError> {
+    match home {
+        Some(path) => Ok(path),
+        None => Ok(StoreRoot::resolve()?.path().to_path_buf()),
+    }
+}
+
+/// Handler: list held shares from the store with no unlock (D-05).
+fn run_share_status(args: ShareStatusArgs) -> CliResult {
+    let root = resolve_root(args.home)?;
+    let manifest = ParticipantStore::read_manifest(&root)?;
+    if manifest.shares.is_empty() {
+        println!("no shares held");
+        return Ok(());
+    }
+    println!("KEY_ID\tEPOCH\tSEAT\tSTATE");
+    for entry in &manifest.shares {
+        println!(
+            "{}\t{}\t{}\t{:?}",
+            entry.key_id, entry.epoch, entry.seat, entry.state
+        );
+    }
+    Ok(())
+}
+
+/// Handler: list the coordinator roster from the public SQLite store.
+fn run_roster(args: RosterArgs) -> CliResult {
+    let root = resolve_root(args.home)?;
+    let db_path = CoordinatorStore::default_db_path(&root);
+    let store = CoordinatorStore::open(&db_path)?;
+    let roster = store.list_roster(&args.key_id)?;
+    if roster.is_empty() {
+        println!("roster empty for key_id={}", args.key_id);
+        return Ok(());
+    }
+    println!("IDENTIFIER\tSEAT\tNPUB\tSTATUS\tJOIN\tLEAVE");
+    for r in &roster {
+        println!(
+            "{}\t{}\t{}\t{}\t{}\t{}",
+            r.identifier,
+            r.seat_index.map(|s| s.to_string()).unwrap_or_default(),
+            r.npub,
+            r.status,
+            r.join_epoch,
+            r.leave_epoch.map(|e| e.to_string()).unwrap_or_default(),
+        );
+    }
+    Ok(())
 }
 
 /// Watcher subcommands.
@@ -71,10 +150,12 @@ impl Cli {
             Persona::Participant(cmd) => match cmd {
                 ParticipantCmd::Keygen(args) => keygen::run(args),
                 ParticipantCmd::Sign(args) => sign::run(args),
+                ParticipantCmd::ShareStatus(args) => run_share_status(args),
             },
             Persona::Coordinator(cmd) => match cmd {
                 CoordinatorCmd::Keygen(args) => keygen::run(args),
                 CoordinatorCmd::Sign(args) => sign::run(args),
+                CoordinatorCmd::Roster(args) => run_roster(args),
             },
             Persona::Watcher(cmd) => match cmd {
                 WatcherCmd::Address(args) => address::run(args),

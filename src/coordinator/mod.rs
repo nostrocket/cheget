@@ -124,11 +124,21 @@ pub struct CoordinatorStore {
 }
 
 impl CoordinatorStore {
+    /// The default coordinator DB path under a resolved store root:
+    /// `<root>/coordinator/state.db`.
+    pub fn default_db_path(root: &Path) -> std::path::PathBuf {
+        root.join("coordinator").join("state.db")
+    }
+
     /// Open (creating if absent) the coordinator DB at `path`, set the crash-safe
     /// pragmas, and migrate `user_version` `0 -> 1`.
     ///
-    /// The DB is public (D-11) — it is deliberately NOT age-encrypted.
+    /// The DB's parent directory is created `0700` if missing. The DB is public
+    /// (D-11) — it is deliberately NOT age-encrypted.
     pub fn open(path: &Path) -> Result<Self, StoreError> {
+        if let Some(parent) = path.parent() {
+            crate::store::atomic::create_dir_secure(parent)?;
+        }
         let conn = Connection::open(path)?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "synchronous", "NORMAL")?;
