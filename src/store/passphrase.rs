@@ -17,6 +17,7 @@
 //! * [`InCodePassphrase`] — a fixed passphrase for headless CI/tests (D-03).
 
 use age::secrecy::SecretString;
+use zeroize::Zeroizing;
 
 use super::StoreError;
 
@@ -80,8 +81,8 @@ impl InteractivePassphrase {
 impl PassphraseSource for InteractivePassphrase {
     fn passphrase(&self) -> Result<SecretString, StoreError> {
         if !self.confirm {
-            let entered = rpassword::prompt_password("Store passphrase: ")?;
-            return Ok(SecretString::from(entered));
+            let entered = Zeroizing::new(rpassword::prompt_password("Store passphrase: ")?);
+            return Ok(SecretString::from(entered.as_str().to_owned()));
         }
 
         // New-store creation: warn, then confirm-twice-and-match (D-04).
@@ -89,12 +90,12 @@ impl PassphraseSource for InteractivePassphrase {
             "WARNING: this passphrase encrypts your identity key and every share.\n\
              A lost passphrase makes them unrecoverable — there is no reset."
         );
-        let first = rpassword::prompt_password("New store passphrase: ")?;
-        let second = rpassword::prompt_password("Confirm store passphrase: ")?;
-        if first != second {
+        let first = Zeroizing::new(rpassword::prompt_password("New store passphrase: ")?);
+        let second = Zeroizing::new(rpassword::prompt_password("Confirm store passphrase: ")?);
+        if *first != *second {
             return Err(StoreError::Age("passphrases did not match".into()));
         }
-        Ok(SecretString::from(first))
+        Ok(SecretString::from(first.as_str().to_owned()))
     }
 }
 
