@@ -6,14 +6,14 @@ current_phase: 02
 current_phase_name: persistence-storage
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-07-14T08:55:42.687Z"
+last_updated: "2026-07-14T08:57:04.704Z"
 last_activity: 2026-07-14
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 14
 ---
 
@@ -83,6 +83,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [02-01]: MSRV gate branch (b) — rusqlite 0.40.1→0.37.0 (bundled) and home 0.5.12→0.5.9; full dep set builds on 1.85. 02-04 targets rusqlite 0.37.
 - [Phase ?]: [02-01]: rpassword APPROVED (Task 1); license Apache-2.0 not MIT (benign). No passphrase env/CLI flag ships (D-01/D-03); CHEGET_HOME is path-override only.
 - [Phase ?]: [02-01]: store layer = StoreError (manual idiom) + write_atomic (D-07) + age/scrypt log_n=18 Zeroizing decrypt (D-06) + PassphraseSource seam (interactive/in-code).
+- [Phase 02]: 02-02: IdentityKeypair transport key is structurally non-derivable from FROST material (no From/TryFrom), proven by a trybuild compile-fail snapshot (D-13)
 
 ### Pending Todos
 
