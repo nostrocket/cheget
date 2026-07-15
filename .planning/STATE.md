@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-current_phase_name: persistence-storage
-status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-07-14T14:45:35.482Z"
-last_activity: 2026-07-14
-last_activity_desc: Phase 02 execution started
+current_phase: 03
+current_phase_name: dkg-at-scale-local
+status: planning
+stopped_at: "Phase 02 implementation complete (5/5 plans); 02-UAT Test 1 blocked, 02-VERIFICATION human_needed"
+last_updated: "2026-07-15T05:51:29Z"
+last_activity: 2026-07-15
+last_activity_desc: "Reconciled GSD docs with codebase; Phase 02 UAT Test 1 recorded blocked (no CLI entry point)"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
-  percent: 14
+  completed_plans: 10
+  percent: 29
 ---
 
 # Project State
@@ -24,46 +24,38 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-10)
 
 **Core value:** A group of 100 can jointly control one Bitcoin address (any 51 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
-**Current focus:** Phase 02 — persistence-storage
+**Current focus:** Phase 03 — dkg-at-scale-local (next to plan). Phase 02 implementation is complete; one verification item is outstanding (see Blockers).
 
 ## Current Position
 
-Phase: 02 (persistence-storage) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 02
-Last activity: 2026-07-14 — Phase 02 execution started
+Phase: 02 (persistence-storage) — IMPLEMENTATION COMPLETE (5/5 plans + summaries)
+Verification: human_needed — 02-UAT Test 1 recorded BLOCKED (interactive passphrase prompt has no CLI entry point yet; WR-01 fix verified in source)
+Next: Phase 03 (DKG at Scale — Local) — not yet planned (no phase directory)
+Last activity: 2026-07-15 — GSD docs reconciled with codebase
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████░░░░░░░░░░] 2/7 phases complete (29%) · 10/10 executed plans
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: - min
-- Total execution time: 0.0 hours
+- Total plans completed: 10 (Phase 01: 5/5, Phase 02: 5/5)
+- Durations below are as recorded per plan; 02-05 (gap-closure) duration was not recorded.
 
-**By Phase:**
+**Per-plan record:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
-| Phase 01 P01 | 25 | 3 tasks | 18 files |
-| Phase 01 P02 | 110 | 3 tasks | 10 files |
-| Phase 01 P03 | 40 | 3 tasks | 7 files |
-| Phase 01 P05 | 10 | 2 tasks | 4 files |
-| Phase 01 P04 | 16 | 3 tasks | 13 files |
-| Phase 02 P01 | 11 | 3 tasks | 7 files |
-| Phase 02 P02 | ~30m | 3 tasks | 6 files |
-| Phase 02 P03 | 16min | 2 tasks | 8 files |
-| Phase 02-persistence-storage P04 | 24min | 3 tasks | 6 files |
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 01 P01 | 25 min | 3 tasks | 18 files |
+| Phase 01 P02 | 110 min | 3 tasks | 10 files |
+| Phase 01 P03 | 40 min | 3 tasks | 7 files |
+| Phase 01 P04 | 16 min | 3 tasks | 13 files |
+| Phase 01 P05 | 10 min | 2 tasks | 4 files |
+| Phase 02 P01 | 11 min | 3 tasks | 7 files |
+| Phase 02 P02 | ~30 min | 3 tasks | 6 files |
+| Phase 02 P03 | 16 min | 2 tasks | 8 files |
+| Phase 02 P04 | 24 min | 3 tasks | 6 files |
+| Phase 02 P05 | not recorded | 2 tasks | (gap-closure: passphrase.rs zeroize) |
 
 ## Accumulated Context
 
@@ -93,6 +85,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- [Phase 02]: 02-UAT Test 1 BLOCKED (blocked_by: prior-phase) — the interactive new-store passphrase prompt (`InteractivePassphrase::for_new_store`) has no CLI entry point in the current binary, so its runtime no-echo/confirm-twice UX cannot be re-confirmed. The WR-01 zeroize fix itself is verified present in source (src/store/passphrase.rs:80-100). 02-VERIFICATION stays `human_needed` until a later phase wires an encrypted-store-creating command; re-confirm then via `/gsd-verify-work 02`.
 - [Roadmap]: Four controls MUST be structural from Phase 1, not retrofitted — non-serializable nonce type (SIGN-05), byte-level bridge round-trip (KEY-03), tweak/aggregate verified against Q (SIGN-03/04), display-before-sign sighash recompute (SIGN-07)
 - [Roadmap]: The `Transport` trait + in-memory stub is the load-bearing architectural seam — it MUST be introduced in Phase 1 so DKG-at-scale (Phase 3), rotation (Phase 4), lifecycle (Phase 5), and hardening (Phase 6) all validate locally with zero relay code
 - [Roadmap]: n=100 O(n²) DKG over Nostr (TRAN-08) is the highest project unknown — Phase 7 flagged for deeper research on strfry tuning + round-2 pacing; the load test is a gating deliverable, not optional. Keep `FileTransport` + schema before `NostrTransport` within Phase 7
@@ -118,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-14T09:30:03.296Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-07-15T05:51:29Z
+Stopped at: Phase 02 implementation complete (5/5 plans); 02-UAT Test 1 blocked, 02-VERIFICATION human_needed
 Resume file: None

@@ -108,7 +108,7 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
 Plans:
 
 - [ ] 03-01: Scale the in-process DKG to n=100 on one host (no transport); all 100 KeyPackages verify to one group key
-- [x] 03-02: Measure the O(n²) computation cost locally + persist/reload the full n=100 share set through the Phase 2 stores (completed 2026-07-14)
+- [ ] 03-02: Measure the O(n²) computation cost locally + persist/reload the full n=100 share set through the Phase 2 stores
 
 ### Phase 4: Membership Rotation
 

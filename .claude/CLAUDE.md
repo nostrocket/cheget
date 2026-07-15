@@ -44,7 +44,7 @@
 | `age` | **0.11.3** (2026-04-22) | At-rest share encryption, scrypt passphrase recipient (`age::scrypt::Recipient` / `Identity`) | Encrypt `KeyPackage`/`PublicKeyPackage` and checkpointed ceremony state. Still labelled BETA upstream but is the de-facto standard; API stable across 0.11.x. |
 | `zeroize` | **1.9.0** (2026-06-12) | Memory hygiene for secret material | Wrap decrypted shares / nonces in `Zeroizing<_>`. Note FROST 3.0 already makes `SigningKey: ZeroizeOnDrop`. |
 | `clap` | **4.6.1** (2026-04-15) | CLI argument parsing (derive API) | Three-persona subcommand tree. |
-| `rusqlite` | **0.40.1** (2026-06-06) | Coordinator SQLite state (roster, transcripts, churn ledger, policy) | Coordinator persona only. Prefer the `bundled` feature for reproducible builds. |
+| `rusqlite` | **0.37** (`bundled`) | Coordinator SQLite state (roster, transcripts, churn ledger, policy) | Coordinator persona only. Uses the `bundled` feature for reproducible builds. Pinned to 0.37 (down from 0.40.1) per the Phase 02-01 decision so the full dep set builds on MSRV 1.85. |
 | `serde` / `serde_json` | **1.x** (latest 1.x) | (De)serialize event payloads, config, FROST types via their serde impls | Everywhere. Pin `1` with a `Cargo.lock` for reproducibility. |
 | `toml` | **1.1.2** (2026-04-01) | Human-editable config file (relays, policy) | Config load/save. |
 
