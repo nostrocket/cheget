@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Crypto Bridge & In-Process Signing** - Prove the frost↔rust-bitcoin bridge and a confirmed regtest 51-of-100 key-spend with zero transport; introduce the `Transport` trait + in-memory stub (completed 2026-07-10)
 - [x] **Phase 2: Persistence & Storage** - Age/scrypt participant store, encrypted between-round checkpointing, and the coordinator SQLite store — the durable-state foundation (completed 2026-07-14)
-- [ ] **Phase 3: DKG at Scale — Local** - Scale the in-process DKG to the full n=100 share set on one host with no transport; prove the O(n²) computation cost locally
+- [ ] **Phase 3: DKG at Scale — Local** - Wire the proven crypto to the persistent store at n=100: `keygen` persists the full share set (unblocking the Phase 2 store-creation UAT); `sign` loads persisted shares for a confirmed regtest key-spend
 - [ ] **Phase 4: Membership Rotation** - Refresh, enroll, and repair over the in-memory stub with client-side same-key check and epoch discipline
 - [ ] **Phase 5: Key Lifecycle & Revocation** - Standby key, sweep + rollover, and the policy-driven watcher over the in-memory stub (the true revocation path)
 - [ ] **Phase 6: Hardening & Security-Reviewable Release** - Reproducible builds, pinned/audited deps, locally-verifiable adversarial suite, external review — all without real transport
@@ -94,21 +94,21 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
 
 ### Phase 3: DKG at Scale — Local
 
-**Goal**: Scale the in-process DKG to the full n=100 share set on a single host with no transport, proving the O(n²) computation cost is tractable locally — the compute-scaling proof, cleanly separated from the later transport-layer load test.
+**Goal**: Wire Phase 1's proven in-process crypto to Phase 2's persistent store at full n=100 scale — a `keygen` that runs the in-process DKG and persists the whole share set through the participant store (the first command to create an encrypted store, unblocking the Phase 2 store-creation UAT), and a `sign` that loads persisted shares to produce a confirmed regtest key-spend. The n=100 DKG correctness and O(n²) compute proof are already satisfied by Phase 1; this phase delivers the persist/reload half through real commands.
 **Depends on**: Phase 2
 **Requirements**: KEY-06
 **Success Criteria** (what must be TRUE):
 
-  1. An in-process DKG generates the full n=100 share set on one host with no transport, producing 100 `KeyPackage`s that all verify to a single group `PublicKeyPackage` (KEY-06)
-  2. The O(n²) computation cost is measured locally (part1/part2/part3 timing and memory across 100 seats), demonstrating the computation scales on one machine independent of any relay (KEY-06)
-  3. The generated n=100 share set persists to and reloads from the Phase 2 participant/coordinator stores at scale, confirming the durable-state layer holds at full size
+  1. `cheget keygen` runs the in-process simulate-all n=100 DKG and persists the full share set through the Phase 2 participant store — 100 separate encrypted store roots (one per seat), each holding its `KeyPackage` encrypted + the group public package, under a prompt-once passphrase; this is the first command that creates an encrypted store and unblocks the Phase 2 store-creation UAT (KEY-06)
+  2. `cheget sign` loads 51 of the persisted store roots, drives the signing session, and produces a confirmed regtest key-spend from those PERSISTED shares (not a fresh in-process DKG), proving the store→sign path end to end
+  3. The wiring is verified at small n in the PR gate and run once at the full n=100 as a functional smoke; n=100 DKG correctness and the O(n²) measurement are already satisfied by Phase 1 (`tests/dkg_100_correctness.rs` + quick task 260713-jqs) — no re-measurement
 
 **Plans**: 2 plans
 
 Plans:
 
-- [ ] 03-01: Scale the in-process DKG to n=100 on one host (no transport); all 100 KeyPackages verify to one group key
-- [ ] 03-02: Measure the O(n²) computation cost locally + persist/reload the full n=100 share set through the Phase 2 stores
+- [ ] 03-01: `keygen` → store — run the in-process n=100 DKG and persist the full share set through the Phase 2 participant store (100 encrypted roots, prompt-once passphrase); unblocks the Phase 2 store-creation UAT
+- [ ] 03-02: `sign` ← store — load 51 persisted store roots and re-prove the confirmed regtest key-spend from persisted shares (small-n PR gate + one-time full-100 functional smoke)
 
 ### Phase 4: Membership Rotation
 

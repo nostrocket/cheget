@@ -6,7 +6,7 @@ current_phase: 02
 current_phase_name: persistence-storage
 status: planning
 stopped_at: "Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)"
-last_updated: "2026-07-15T11:03:22.673Z"
+last_updated: "2026-07-15T11:13:43.237Z"
 last_activity: 2026-07-15
 last_activity_desc: GSD docs reconciled with codebase
 progress:
@@ -101,6 +101,10 @@ None yet.
 | 260713-kxi | rename project from tsig to cheget (crate, binary, lib, `CHEGET_*` env prefix, and all prose incl. completed planning history) | 2026-07-13 | f1c14c1 | [260713-kxi-rename-project-from-tsig-to-cheget](./quick/260713-kxi-rename-project-from-tsig-to-cheget/) |
 | 260713-pk2 | update README with mainnet and regtest usage, fully current (documented real verified CLI surface; added regtest/mainnet sections; corrected stale keygen/sign and #[ignore] claims) | 2026-07-13 | df44fbb | [260713-pk2-update-readme-with-mainnet-and-regtest-u](./quick/260713-pk2-update-readme-with-mainnet-and-regtest-u/) |
 | 260715-msx | Update README CLI docs to current binary surface (added `participant share-status` + `coordinator roster`; corrected "three commands" count; reframed stale no-persistence/Phase-1-only claims now that Phase 2 shipped, without overstating — storage layer + read inspectors only, no persisted-key custody yet) | 2026-07-15 | b9c89b4 | [260715-msx-update-readme-md-cli-documentation-to-ma](./quick/260715-msx-update-readme-md-cli-documentation-to-ma/) |
+
+### Roadmap Evolution
+
+- Phase 3 edited: reframed goal/success-criteria/plans: DKG-at-scale proof (already met by Phase 1) -> CLI wiring keygen->store + sign<-store; unblocks Phase 2 store-creation UAT
 
 ## Deferred Items
 
