@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 03
-current_phase_name: dkg-at-scale-local
+current_phase: 02
+current_phase_name: persistence-storage
 status: planning
-stopped_at: "Phase 02 implementation complete (5/5 plans); 02-UAT Test 1 blocked, 02-VERIFICATION human_needed"
-last_updated: "2026-07-15T05:51:29Z"
+stopped_at: "Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)"
+last_updated: "2026-07-15T11:03:22.673Z"
 last_activity: 2026-07-15
-last_activity_desc: "Quick task 260715-msx — README CLI docs updated to current binary surface (share-status, roster) + Phase 2 status reframed"
+last_activity_desc: GSD docs reconciled with codebase
 progress:
   total_phases: 7
   completed_phases: 2
@@ -112,6 +112,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-15T05:51:29Z
-Stopped at: Phase 02 implementation complete (5/5 plans); 02-UAT Test 1 blocked, 02-VERIFICATION human_needed
-Resume file: None
+Last session: 2026-07-15T11:03:22.668Z
+Stopped at: Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)
+Resume file: .planning/phases/03-dkg-at-scale-local/03-CONTEXT.md
