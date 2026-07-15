@@ -106,8 +106,12 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 03-01-PLAN.md [W1]: `keygen` → store — run the in-process DKG and persist the full share set as 100 per-seat encrypted roots (prompt-once passphrase reuse seam); the first command to create an encrypted store, unblocking the Phase 2 store-creation UAT (KEY-06)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 03-02-PLAN.md [W2]: `sign` ← store — load 51 persisted store roots and re-prove the confirmed regtest key-spend from persisted shares (small-n PR gate + one-time #[ignore] full-100 functional smoke) (KEY-06)
 
 ### Phase 4: Membership Rotation
