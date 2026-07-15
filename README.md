@@ -6,9 +6,14 @@ signatures (RFC 9591, secp256k1, BIP340/341 key-path spend). On-chain, its spend
 are indistinguishable from ordinary single-sig. The CLI is organized into three
 personae — participant, coordinator, watcher — selected by subcommand.
 
-> **Status:** early. Only the cryptographic core (Phase 1) is implemented today.
-> It runs entirely **in-process on a single host** — there is no networking,
-> no relay/transport layer, and no persistence yet. Everything under
+> **Status:** early. The cryptographic core (Phase 1) and the persistence &
+> storage **layer** (Phase 2) are implemented today: an age/scrypt participant
+> store, encrypted between-round ceremony checkpointing, a coordinator SQLite
+> store, and two read-only inspector commands (`share-status`, `roster`). It
+> still runs entirely **in-process on a single host** — there is no networking
+> and no relay/transport layer — and **no CLI flow yet persists or consumes a
+> secret share**, so the persisted-key ceremony/signing flow that would wire the
+> storage layer into fund custody is later-phase work. Everything under
 > "Planned" below is designed but not built. See
 > [`.planning/ROADMAP.md`](.planning/ROADMAP.md) and the draft design in
 > [`SPEC-frost-cli.md`](SPEC-frost-cli.md) for the full end-state vision.
@@ -28,14 +33,16 @@ such that:
    pre-generated standby key.
 
 The threshold is fixed: `t = 51`, `n = 100`, and never changes. Properties 3 and 4
-are design goals for later phases; today only the crypto core that makes property
-1 and 2 possible in-process is built.
+are design goals for later phases; today the crypto core that makes properties 1
+and 2 possible in-process is built, together with the Phase 2 persistence &
+storage layer (not yet wired into a fund-custody signing flow).
 
-## Status: what works today (Phase 1)
+## Status: what works today (Phases 1–2)
 
 Phase 1 proves the whole cryptographic value in-process — DKG → BIP341 address →
-two-round tweaked signing → a confirmed regtest key-spend — with zero transport and
-no persistence. What is implemented and tested:
+two-round tweaked signing → a confirmed regtest key-spend — with zero transport.
+Phase 2 adds the persistence & storage **layer** beneath it. The Phase 1 crypto
+core is implemented and tested as follows:
 
 | Capability | Where | Pinned by |
 |------------|-------|-----------|
@@ -49,24 +56,46 @@ All of the above runs on a **single host with no networking**. The DKG uses
 simulated participants in one process ("simulate-all-seats"); signing runs the
 coordinator and all signers in-process against the in-memory transport stub.
 
+**Phase 2 — persistence & storage layer (shipped, not yet wired into custody).**
+The storage layer is implemented and tested: an **age/scrypt participant store**
+for at-rest share encryption (with in-memory `zeroize`), **encrypted
+between-round ceremony checkpointing**, and a **coordinator SQLite store**
+(roster and related public state). Two read-only inspector commands expose it
+from the CLI: `participant share-status` (lists held shares by reading the
+plaintext manifest — no decryption, no passphrase prompt) and
+`coordinator roster` (lists the roster from the public SQLite store). This is the
+storage **layer only**: `keygen` still writes only the public `PublicKeyPackage`
+envelope, `sign` still runs an in-process simulate-all-seats DKG, and **no CLI
+command persists or consumes a secret share yet** — so the manifest
+`share-status` reads is not populated by the current `keygen`/`sign` flows. The
+persisted-key ceremony/signing flow that wires this layer into fund custody is
+later-phase work.
+
 ### CLI surface today (honest)
 
 The clap persona tree (participant / coordinator / watcher) dispatches to real
-handlers. Three commands run end-to-end from the command line, but the two
-ceremony commands (`keygen`, `sign`) run an **in-process simulate-all-seats DKG**
-— there is no transport, no multi-party rounds over a network, and no persisted
-secret share.
+handlers. Seven subcommands run end-to-end from the command line — participant
+`keygen`/`sign`/`share-status`, coordinator `keygen`/`sign`/`roster`, and watcher
+`address` (participant and coordinator `keygen`/`sign` share the same in-process
+handler). The two ceremony commands (`keygen`, `sign`) still run an **in-process
+simulate-all-seats DKG** — there is no transport, no multi-party rounds over a
+network, and no persisted secret share. `share-status` and `roster` are the two
+read-only inspectors added in Phase 2.
 
 ```text
 cheget
 ├── participant
-│   ├── keygen   in-process DKG; writes ONLY the public key package
-│   └── sign     in-process DKG + two-round signing over a supplied PSBT
+│   ├── keygen        in-process DKG; writes ONLY the public key package
+│   ├── sign          in-process DKG + two-round signing over a supplied PSBT
+│   └── share-status  read-only; lists held shares from the plaintext manifest;
+│                     never unlocks or prompts for a passphrase
 ├── coordinator
-│   ├── keygen   (same in-process handler as participant keygen)
-│   └── sign     (same in-process handler as participant sign)
+│   ├── keygen        (same in-process handler as participant keygen)
+│   ├── sign          (same in-process handler as participant sign)
+│   └── roster        read-only; lists the roster from the coordinator's public
+│                     SQLite store
 └── watcher
-    └── address  derive the group's BIP341 P2TR address (offline, no network)
+    └── address       derive the group's BIP341 P2TR address (offline, no network)
 ```
 
 - **`watcher address`** — fully usable offline. Reads a public-artifact file (a
@@ -100,7 +129,9 @@ cheget
   command runs its own in-process DKG, derives the group address, and signs the
   supplied `--psbt` against it. The PSBT must therefore spend the address this run
   derives — it is not signing of an externally-funded, persisted-key wallet
-  (that arrives in Phase 2). The default network is `regtest`. Signing is gated by
+  (that persisted-key custody flow is later-phase work; Phase 2 shipped only the
+  storage layer, not a signing flow that consumes a persisted share). The default
+  network is `regtest`. Signing is gated by
   a display-before-sign acknowledgement; `--yes` skips only the interactive human
   ack (for automation/regtest), never the local sighash recompute.
 
@@ -108,6 +139,32 @@ cheget
   cheget coordinator sign --psbt <FILE> [--network <NETWORK>] [--yes] \
                           [--full] [--seats <N>] [--threshold <T>] [--session <NAME>]
   ```
+
+- **`participant share-status`** — a read-only inspector introduced in Phase 2.
+  It reads the plaintext share manifest from the store root and lists the held
+  shares. It performs **no decryption** and **never prompts for a passphrase**
+  (D-05) — it does not unlock any encrypted share and reads no `--pubkey` file.
+  Note that no CLI flow yet persists a secret share, so on a normal
+  `keygen`/`sign` install this manifest is empty; the command reports what the
+  storage layer holds, which current ceremony flows do not populate.
+
+  ```text
+  cheget participant share-status [--home <PATH>]
+  ```
+
+  `--home` overrides the store root (otherwise `CHEGET_HOME` or `~/.cheget`).
+
+- **`coordinator roster`** — a read-only inspector introduced in Phase 2. It
+  lists the roster from the coordinator's **public SQLite store** (STOR-03). It
+  reads only public roster data — no secret material and no network call.
+
+  ```text
+  cheget coordinator roster [--key-id <ID>] [--home <PATH>]
+  ```
+
+  `--key-id` selects the group-key label (`active` | `standby`, default
+  `active`); `--home` overrides the store root (otherwise `CHEGET_HOME` or
+  `~/.cheget`).
 
 **Structural security controls (present from Phase 1):**
 
@@ -176,25 +233,24 @@ cheget watcher address --pubkey pk.json --network bitcoin
 ```
 
 > **Safety / status — read this before doing anything with real funds.**
-> This is **Phase 1 only** and is **not production-audited**. The full mainnet
-> signing and custody ceremony — multi-party signing rounds over a transport,
-> signing of an externally-funded PSBT, broadcast, watching, and the sweep to a
-> standby key — is **NOT yet wired** and arrives in later phases (see Planned,
-> below). The in-process `keygen`/`sign` commands simulate all seats in one
-> process with no persistence, so they cannot custody funds for a real 100-member
-> group. **Do not entrust real funds to flows that do not exist yet.** The only
-> mainnet-safe action today is offline address derivation.
+> This is **early, pre-custody** software and is **not production-audited**. The
+> full mainnet signing and custody ceremony — multi-party signing rounds over a
+> transport, signing of an externally-funded PSBT, broadcast, watching, and the
+> sweep to a standby key — is **NOT yet wired** and arrives in later phases (see
+> Planned, below). The Phase 2 storage layer exists but is **not yet wired into a
+> fund-custody signing flow**: the in-process `keygen`/`sign` commands simulate
+> all seats in one process and **no CLI command persists or consumes a secret
+> share**, so they cannot custody funds for a real 100-member group. **Do not
+> entrust real funds to flows that do not exist yet.** The only mainnet-safe
+> action today is offline address derivation.
 
 ## Planned (not yet built)
 
 The following are designed in the roadmap and spec but **not implemented**. In
-particular, **no transport, relay, or Nostr code exists yet**, and there is **no
-persistence layer yet** — all current state lives in memory for the duration of a
-run.
+particular, **no transport, relay, or Nostr code exists yet**, and the Phase 2
+storage layer is **not yet wired into any fund-custody signing flow** — no CLI
+command persists or consumes a secret share.
 
-- **Phase 2 — Persistence & storage:** at-rest share encryption (age/scrypt) with
-  in-memory zeroize, encrypted between-round ceremony checkpointing, and a
-  coordinator SQLite store (roster, transcripts, logs, policy, churn ledger).
 - **Phase 3 — DKG at scale (local):** scale the in-process DKG to the full n=100
   share set on one host and measure the O(n²) computation cost locally.
 - **Phase 4 — Membership rotation:** refresh (removals + proactivize), enroll
@@ -288,9 +344,12 @@ Only properties the code enforces today are claimed:
   against the Taproot output key `Q` before acceptance, and FROST 3.0
   cheater-detection surfaces culprits on abort.
 
-Security properties tied to later phases — at-rest encryption, epoch discipline,
-same-key rotation checks, standby/sweep revocation, and Nostr↔FROST key separation
-— are **not yet enforced** and are described above as planned.
+The Phase 2 storage layer provides **at-rest share encryption** (age/scrypt with
+in-memory `zeroize`), but no CLI signing flow yet persists or consumes a secret
+share, so this protection is not yet exercised in a fund-custody path. Other
+security properties tied to later phases — epoch discipline, same-key rotation
+checks, standby/sweep revocation, and Nostr↔FROST key separation — are **not yet
+enforced** and are described above as planned.
 
 ## License
 
