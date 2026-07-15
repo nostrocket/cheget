@@ -3,12 +3,12 @@ status: partial
 phase: 02-persistence-storage
 source: [02-VERIFICATION.md]
 started: 2026-07-14T14:57:11Z
-updated: 2026-07-14T15:12:00Z
+updated: 2026-07-15T05:51:29Z
 ---
 
 ## Current Test
 
-[testing paused — 1 item outstanding: Test 1]
+[testing complete for now — Test 1 blocked on a missing CLI entry point (see below)]
 
 ## How to Resume (after any absence)
 
@@ -50,16 +50,31 @@ why_human: |
   PASS (recorded on pre-fix code) needs a light re-confirmation on the post-fix
   code. Only the transient buffer changed (now zeroized on drop); the UX is
   unchanged.
-result: pending
+result: blocked
+blocked_by: prior-phase
+reason: |
+  The interactive prompt cannot be triggered from any CLI command in the current
+  binary. Traced 2026-07-15: no CLI path constructs InteractivePassphrase; every
+  PassphraseSource construction outside the type definition is InCodePassphrase
+  inside #[cfg(test)]. The only participant-store CLI touchpoint is
+  ParticipantStore::read_manifest (`participant share-status`), which by design
+  never unlocks or prompts (D-05); `keygen` persists only the public package
+  (D-09); the coordinator store is unencrypted SQLite; `cheget init` is Phase 7.
+  The WR-01 fix itself is verified present and correct in source
+  (src/store/passphrase.rs:80-100 — all three rpassword reads wrapped in
+  Zeroizing, warning printed before prompts, confirm-twice + mismatch rejection),
+  but the runtime TTY behavior is unreachable until a later phase wires an
+  encrypted-store-creating command. Re-confirm at a real terminal once that
+  entry point exists.
 
 ## Summary
 
 total: 1
 passed: 0
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
-blocked: 0
+blocked: 1
 
 ## Prior cycle (resolved — historical record)
 
