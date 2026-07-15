@@ -42,7 +42,7 @@ key-files:
 key-decisions:
   - "Watch-only tr() descriptor imported into a dedicated disable_private_keys wallet; Core v28 rejects keyless descriptor import into a key-holding wallet (real error surfaced during Task 3)"
   - "CoreRpcBackend is a bitcoincore-rpc client pointed at the corepc-node wallet endpoint (cookie auth); corepc-node's own corepc_client is used only for spawning — keeps the production backend on the pinned bitcoincore-rpc 0.19"
-  - "confirmation_depth uses wallet gettransaction (watch-only wallet knows txs paying to/from the group address); returns 0 for negative/unknown"
+  - "confirmation_depth uses wallet gettransaction (watch-only wallet knows txs paying to/from the group address); clamps negative confirmations to 0 (mempool/reorg), and returns Err(ChainError::Rpc) for an unknown txid — it does NOT coerce unknown to 0"
   - "estimate_fee returns Option<FeeRate> (regtest → Ok(None)) so callers can fall back to a floor; Core BTC/kvB converted to sat/vB"
   - "Esplora conformance runs against an in-process mock HTTP server for hermeticity (D-07 permits mock); the shared regtest fixture lives in tests/common and is re-exported from tests/regtest_fixture.rs"
 

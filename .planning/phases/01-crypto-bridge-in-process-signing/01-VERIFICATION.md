@@ -1,25 +1,22 @@
 ---
 phase: 01-crypto-bridge-in-process-signing
 verified: 2026-07-10T13:10:49Z
-status: human_needed
+reverified: 2026-07-15T05:51:29Z
+status: passed
 score: 5/5 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
-human_verification:
-  - test: "Run the full-scale 51-of-100 in-process confirmed regtest key-spend: `cargo test --release --test inproc_sign_100 -- --ignored --nocapture`"
-    expected: "`inproc_sign_confirmed_regtest_key_spend_51_of_100` completes: DKG over 100 seats → group address → two-round tweaked sign at t=51 → aggregate_with_tweak(None) → 64-byte BIP340 sig verifies against Q → PSBT finalized → tx broadcast and confirmed on the auto-spawned regtest node"
-    why_human: "The full-scale n=100 in-process DKG is a multi-CPU-hour job, intentionally `#[ignore]`d off the per-PR gate (D-02/D-06). Correctness is proven at small n via an identical generic code path (inproc_sign_confirmed_regtest_key_spend_small_n passes), but the crown-jewel outcome at the real acceptance scale has not been observed to complete in this environment. It must be run on the nightly/on-demand job."
-  - test: "Run the full-scale n=100 DKG correctness + O(n^2) instrumentation gate: `cargo test --release --test dkg_100_correctness -- --ignored --nocapture`"
-    expected: "`dkg_100_all_shares_verify_to_one_group_key` completes: 100 KeyPackages all verify to one group PublicKeyPackage; part1/part2/part3 timing and peak-RSS are reported"
-    why_human: "Same multi-CPU-hour constraint (KEY-06/D-06). Compile-checked and correct at smaller n; the full-scale scaling/correctness proof is a nightly/on-demand human-run job. (KEY-06 maps to Phase 3 in REQUIREMENTS.md; the gate was folded forward here per D-03.)"
+human_verification: []
+resolution:
+  - note: "The two items originally flagged human_needed (full-scale 51/100 confirmed key-spend and n=100 DKG correctness) are RESOLVED. After the post-completion DKG speedup (commit 9bc25e4 rayon parallelization + quick-task 260713-itg ~6.6×), commit c537bf0 un-ignored both full-scale tests; they now run by default on a plain `cargo test`. Re-verified 2026-07-15: `dkg_100_correctness` passes at t=51/n=100 in 4.32s (part1=160ms, part2=99ms, part3=4.04s; peak RSS 16.9 MiB); `inproc_sign_100` confirmed regtest key-spend passes in 8.93s. No `#[ignore]`, no `--ignored`, no nightly/on-demand run is needed. (KEY-06 maps to Phase 3 in REQUIREMENTS.md; the correctness gate was folded forward here per D-03.)"
 ---
 
 # Phase 1: Crypto Bridge & In-Process Signing Verification Report
 
 **Phase Goal:** Prove the entire cryptographic value in-process — DKG → BIP341 address → two-round tweaked signing → a confirmed regtest key-spend — with zero transport, relays, or persistence, and the four structural security controls present from the first line of signing code. Introduce the `Transport` trait and its in-memory/in-process stub so every later ceremony phase runs against it with no relay code.
-**Verified:** 2026-07-10T13:10:49Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Verified:** 2026-07-10T13:10:49Z (re-verified 2026-07-15T05:51:29Z)
+**Status:** passed
+**Re-verification:** Yes — 2026-07-15: the two former human-needed full-scale gates now run by default and pass (see Resolution in frontmatter)
 
 ## Goal Achievement
 
@@ -28,14 +25,14 @@ human_verification:
 | # | Truth | Status | Evidence |
 | --- | ------- | ---------- | -------------- |
 | 1 | `cheget address` prints a BIP341 P2TR address (merkle root `None`) from a DKG-generated group key; a committed byte-level round-trip test pins the frost→rust-bitcoin bridge against a hard-coded KAT (KEY-03, KEY-04) | ✓ VERIFIED | `src/bridge/taproot.rs` is the sole bridge; `cargo test --test bridge_roundtrip` → 3/3 pass (even-Y + odd-Y-origin hard-coded address strings + address-command read-back). CLI spot-check: `watcher address --pubkey` printed `bc1p…w8l6n`. `XOnlyPublicKey::from_slice` confined to `bridge/taproot.rs` (grep confirmed). |
-| 2 | An in-process ceremony (51 simulated participants, no transport) produces a `KeyPackage`+`PublicKeyPackage` whose verifying key is the internal key `P`, and every participant confirms the key back — mismatch aborts (KEY-01, KEY-02, KEY-05) | ✓ VERIFIED (at proven scale) | `src/crypto/keygen.rs::run_inprocess_dkg` (pure `dkg::part1/2/3`, even-Y normalized, group-key equality check) + `confirm_group_key`. `dkg_small` → 2/2 pass incl. `corrupted_seat_fails_confirmation_and_aborts`. Generic over (t,n); full 51/100 correctness is the `#[ignore]`d nightly gate (human item #2). |
-| 3 | A coordinator signing session over a regtest PSBT computes the per-input key-spend sighash, runs round1/round2 with `sign_with_tweak`, aggregates with `aggregate_with_tweak(…, None)` into a 64-byte BIP340 sig verifying against output key `Q`, finalizes the PSBT, and broadcasts a confirmed regtest key-spend (SIGN-01..04, STOR-04) | ✓ VERIFIED (at proven scale) | `src/session/mod.rs` full two-round orchestration; `crypto/sign.rs` tweaked-only aggregate + `verify_against_q`; `chain/sighash.rs` fixed `Default`/`Prevouts::All`. `inproc_sign` → 7/7 pass incl. `round2_run_signs_and_verifies_against_q_not_p` and `inproc_sign_confirmed_regtest_key_spend_small_n` (broadcasts + confirms on corepc-node regtest). Full 51/100 crown-jewel is `#[ignore]`d nightly (human item #1). |
+| 2 | An in-process ceremony (51 simulated participants, no transport) produces a `KeyPackage`+`PublicKeyPackage` whose verifying key is the internal key `P`, and every participant confirms the key back — mismatch aborts (KEY-01, KEY-02, KEY-05) | ✓ VERIFIED (at proven scale) | `src/crypto/keygen.rs::run_inprocess_dkg` (pure `dkg::part1/2/3`, even-Y normalized, group-key equality check) + `confirm_group_key`. `dkg_small` → 2/2 pass incl. `corrupted_seat_fails_confirmation_and_aborts`. Generic over (t,n); full 51/100 correctness now runs by default and passes — `dkg_100_correctness` → 1/1 pass in 4.32s (re-verified 2026-07-15). |
+| 3 | A coordinator signing session over a regtest PSBT computes the per-input key-spend sighash, runs round1/round2 with `sign_with_tweak`, aggregates with `aggregate_with_tweak(…, None)` into a 64-byte BIP340 sig verifying against output key `Q`, finalizes the PSBT, and broadcasts a confirmed regtest key-spend (SIGN-01..04, STOR-04) | ✓ VERIFIED (at proven scale) | `src/session/mod.rs` full two-round orchestration; `crypto/sign.rs` tweaked-only aggregate + `verify_against_q`; `chain/sighash.rs` fixed `Default`/`Prevouts::All`. `inproc_sign` → 7/7 pass incl. `round2_run_signs_and_verifies_against_q_not_p` and `inproc_sign_confirmed_regtest_key_spend_small_n` (broadcasts + confirms on corepc-node regtest). Full 51/100 crown-jewel now runs by default and passes — `inproc_sign_100` → 1/1 pass in 8.93s, confirmed regtest key-spend (re-verified 2026-07-15). |
 | 4 | Signing nonces are a type that cannot be serialized/persisted (won't compile); a restart/timeout mints fresh nonces in a new session, never reusing commitments, with 3.0 cheater-detection culprits surfaced on abort (SIGN-05, SIGN-06) | ✓ VERIFIED | `src/crypto/nonce.rs::EphemeralNonces` (move-only, no Serialize/Clone, `Zeroizing`, consumed by-value in `sign`). trybuild `compile_fail` → `nonce_is_not_serializable` passes (committed `.stderr`). `sign_adversarial` → 3/3 pass: `nonce_reuse_is_rejected…`, `abort_yields_fresh_commitments_never_the_reused_set`; culprits via `AggregateError::Culprits` + `round2_aggregate_surfaces_culprits_on_invalid_share`. |
 | 5 | Before round 2, each participant recomputes the sighash locally from the PSBT and is shown human-readable outputs/amounts/fee, requiring explicit ack unless `--yes` — no blind signing (SIGN-07) | ✓ VERIFIED | `src/session/display.rs::display_and_ack` recomputes via the one canonical `key_spend_sighash`, rejects `BlindSignMismatch`, requires ack. Tests: `round2_display_gate_refuses_blind_sign`, `malicious_coordinator_sighash_is_refused_even_with_yes` (the `--yes` bypass does NOT skip the recompute check). |
 
 **Score:** 5/5 truths verified (0 present, behavior-unverified)
 
-All behavior-dependent truths (state transitions / cancellation invariants: KEY-05 abort, SIGN-05 nonce consume-on-sign, SIGN-06 spent-session/fresh-commitments, SIGN-07 blind-sign refusal) have passing behavioral tests at the per-PR scale. The two human items are not unverified behavior — they are the same generic code paths run at the full acceptance scale, gated `#[ignore]` for cost.
+All behavior-dependent truths (state transitions / cancellation invariants: KEY-05 abort, SIGN-05 nonce consume-on-sign, SIGN-06 spent-session/fresh-commitments, SIGN-07 blind-sign refusal) have passing behavioral tests. The full acceptance-scale (t=51, n=100) runs — the same generic code paths — now execute by default on `cargo test` and pass (re-verified 2026-07-15); they are no longer cost-gated or human-run.
 
 ### Required Artifacts
 
@@ -57,7 +54,7 @@ All behavior-dependent truths (state transitions / cancellation invariants: KEY-
 | ---- | --- | --- | ------ | ------- |
 | `VerifyingKey` | `XOnlyPublicKey::from_slice` | Confined to `bridge/taproot.rs` | ✓ WIRED | grep: only occurrence in crate is `taproot.rs:106`. |
 | bridge | `Address::p2tr(secp, internal, None, hrp)` | merkle root `None` → BIP86 Q | ✓ WIRED | `address_from_group_key` line 79. |
-| DKG part3 | `into_even_y(None)` → group key = bridge input | even-Y normalization | ✓ WIRED | `keygen.rs:133-134`; CLI keygen→address round-trip produces a valid address. |
+| DKG part3 | `into_even_y(None)` → group key = bridge input | even-Y normalization | ✓ WIRED | `keygen.rs:182-183`; CLI keygen→address round-trip produces a valid address. |
 | `EphemeralNonces` | consumed by-value in `sign()` | nonce dropped after share | ✓ WIRED | `nonce.rs::sign(self,…)`; session `round2` moves nonces. |
 | session | `aggregate_with_tweak(None)` → `output_key_q` verify | tweaked-only path | ✓ WIRED | `crypto/sign.rs` + `session/mod.rs:385-388`. |
 | coordinator | distributes PSBT, seat recomputes sighash | SIGN-07 gate | ✓ WIRED | `display.rs` recompute; session sends PSBT-derived sighash, gate re-derives independently. |
@@ -67,11 +64,11 @@ All behavior-dependent truths (state transitions / cancellation invariants: KEY-
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Full non-ignored suite | `cargo test` | 34 pass, 0 fail, 2 ignored (documented full-scale gates) | ✓ PASS |
+| Full suite (re-verified 2026-07-15) | `cargo test --release` | 49 pass, 0 fail, 1 ignored — the two former Phase-1 full-scale gates now run by default and pass; the sole remaining `#[ignore]` is the Phase-2 `store_checkpoint_n100` harness stub | ✓ PASS |
 | CLI persona tree | `cheget --help` | participant/coordinator/watcher listed | ✓ PASS |
 | keygen→address round-trip | `coordinator keygen --out … ; watcher address --pubkey …` | valid `bc1p…` P2TR printed | ✓ PASS |
 | No secret material persisted (D-09) | grep envelope for share/secret/KeyPackage | 0 matches | ✓ PASS |
-| Full-scale gates compile (not bit-rotted) | `cargo test --test inproc_sign_100 --test dkg_100_correctness --no-run` | both link | ✓ PASS |
+| Full-scale 51/100 runs pass by default | `cargo test --release --test inproc_sign_100 --test dkg_100_correctness` | both run and pass (key-spend 8.93s, DKG proof 4.32s) | ✓ PASS |
 
 ### Requirements Coverage
 
@@ -85,13 +82,13 @@ All behavior-dependent truths (state transitions / cancellation invariants: KEY-
 | SIGN-01 | 01-04 | ✓ SATISFIED | Per-input key-spend sighash from PSBT; `round1_builds_signing_package_from_psbt_sighash`. |
 | SIGN-02 | 01-04, 01-05 | ✓ SATISFIED | Liveness poll + `t`-subset select over Transport; `round1_over_provisioned_poll_selects_exactly_t`. |
 | SIGN-03 | 01-04 | ✓ SATISFIED | `sign_with_tweak` + `aggregate_with_tweak(None)` → 64-byte BIP340. |
-| SIGN-04 | 01-04 | ✓ SATISFIED (proven scale) | `verify_against_q`, PSBT finalize, confirmed regtest key-spend at small n; 51/100 = human item #1. |
+| SIGN-04 | 01-04 | ✓ SATISFIED | `verify_against_q`, PSBT finalize, confirmed regtest key-spend — verified at small n and at full 51/100 (`inproc_sign_100` passes by default, 8.93s). |
 | SIGN-05 | 01-02 | ✓ SATISFIED | Non-serializable `EphemeralNonces` + trybuild compile-fail. |
 | SIGN-06 | 01-04 | ✓ SATISFIED | Culprits surfaced; spent-session/fresh-nonce; `sign_adversarial`. |
 | SIGN-07 | 01-04 | ✓ SATISFIED | Recompute + display + ack; blind-sign refused even with `--yes`. |
 | STOR-04 | 01-03 | ✓ SATISFIED | `ChainBackend` trait + Core RPC + Esplora; `chain_backend_conformance`. |
 
-All 13 phase requirement IDs are declared in plan frontmatter and satisfied. No orphaned requirements. (Plan 01-02 additionally declares KEY-06, which REQUIREMENTS.md maps to Phase 3; it was folded forward here per D-03 and is tracked as human item #2 — not a Phase 1 gap.)
+All 13 phase requirement IDs are declared in plan frontmatter and satisfied. No orphaned requirements. (Plan 01-02 additionally declares KEY-06, which REQUIREMENTS.md maps to Phase 3; it was folded forward here per D-03. The full 51/100 correctness run now passes by default — `dkg_100_correctness`, 4.32s — so it is fully verified here, not deferred.)
 
 ### Anti-Patterns Found
 
@@ -103,14 +100,16 @@ No debt-marker blockers (`TODO`/`FIXME`/`XXX`/`TBD`) in phase source. No empty/p
 
 ### Human Verification Required
 
-1. **Full-scale 51-of-100 confirmed regtest key-spend** (crown jewel at target scale) — run `cargo test --release --test inproc_sign_100 -- --ignored --nocapture`. Multi-CPU-hour nightly/on-demand gate (D-02/D-06). The identical generic code path is confirmed at small n; this observes it at the real acceptance scale.
-2. **Full-scale n=100 DKG correctness + O(n²) instrumentation** — run `cargo test --release --test dkg_100_correctness -- --ignored --nocapture`. Same cost constraint; confirms 100 shares verify to one group key and reports scaling.
+None — both items previously listed here are RESOLVED (re-verified 2026-07-15). After the post-completion DKG speedup they were un-ignored (commit c537bf0) and now run by default:
+
+1. ~~Full-scale 51-of-100 confirmed regtest key-spend~~ → **resolved**: `cargo test --release --test inproc_sign_100` runs by default and passes (8.93s, confirmed regtest key-spend at t=51/n=100). No `--ignored`.
+2. ~~Full-scale n=100 DKG correctness + O(n²) instrumentation~~ → **resolved**: `cargo test --release --test dkg_100_correctness` runs by default and passes (4.32s; 100 KeyPackages → one group key; part1=160ms/part2=99ms/part3=4.04s, peak RSS 16.9 MiB). No `--ignored`.
 
 ### Gaps Summary
 
-No gaps. All five ROADMAP success criteria and all thirteen phase requirement IDs are verified in the codebase at the per-PR proven scale, with 34 tests passing and the four structural security controls (non-serializable nonce type, byte-level bridge KAT, verify-against-Q, display-before-sign) each backed by a passing test. The two outstanding items are the intentionally `#[ignore]`d full-scale (t=51, n=100) gates — documented, test-encoded, compile-clean, and exercising the same generic code proven correct at smaller n. Per the phase's testing strategy these satisfy the requirement intent and are not gaps; they are surfaced as nightly/on-demand human-run items so the full-scale crown-jewel is observed before the milestone closes. Status is therefore `human_needed`, not `passed`.
+No gaps. All five ROADMAP success criteria and all thirteen phase requirement IDs are verified in the codebase, and the four structural security controls (non-serializable nonce type, byte-level bridge KAT, verify-against-Q, display-before-sign) are each backed by a passing test. The two items originally deferred as `#[ignore]`d full-scale (t=51, n=100) gates are now RESOLVED: after the post-completion DKG speedup they were un-ignored (commit c537bf0) and run by default. Re-verified 2026-07-15 — the full-scale crown-jewel confirmed key-spend (`inproc_sign_100`, 8.93s) and the n=100 DKG correctness/instrumentation run (`dkg_100_correctness`, 4.32s) both pass on a plain `cargo test`. Status is therefore `passed`.
 
 ---
 
-_Verified: 2026-07-10T13:10:49Z_
+_Verified: 2026-07-10T13:10:49Z; re-verified 2026-07-15T05:51:29Z (full-scale gates run by default and pass; status human_needed → passed)_
 _Verifier: Claude (gsd-verifier)_

@@ -13,17 +13,18 @@ re_verification:
   gaps_remaining: []
   regressions: []
   resolved_human_items:
-    - "Prior human item #1 (interactive no-echo prompt): human-verified PASS in 02-UAT.md test 1. Re-flagged below because the gap-closure (c2c3a83) modified those exact prompt lines — a light re-confirmation on the post-change code."
     - "Prior human item #3 (WR-03 pre-existing dir perms): resolved by maintainer decision ACCEPT in 02-UAT.md test 3 — files stay 0600 regardless; no code change. Not re-flagged."
+  blocked_human_items:
+    - "Interactive no-echo prompt (was prior human item #1): BLOCKED, not resolved. Corrected 2026-07-15 — the earlier 'prior UAT PASS' framing was unsupported: no CLI command in the shipped binary constructs InteractivePassphrase (every construction outside the type definition is InCodePassphrase under #[cfg(test)]; keygen persists only the public package, share-status uses read_manifest with no unlock, the coordinator store is unencrypted SQLite, `cheget init` is Phase 7). The prompt's runtime UX therefore cannot be exercised through the current binary. 02-UAT.md Test 1 is recorded `blocked` (blocked_by: prior-phase). The WR-01 zeroize fix is verified present in source (passphrase.rs:80-100); only its runtime TTY behavior is unverifiable until a later phase wires an encrypted-store-creating command."
 behavior_unverified_items:
   - truth: "New-store creation still prompts twice with no echo, rejects a mismatch, and prints the unrecoverability warning; the unlock path still prompts once — all preserved after the Zeroizing wrapping (02-05 T2)."
     test: "Run cheget triggering new-store passphrase creation (InteractivePassphrase::for_new_store) at a real terminal, then the unlock path (for_unlock)."
     expected: "No echo while typing; new-store prompts twice with the 'a lost passphrase makes them unrecoverable — there is no reset' warning printed first; a mismatch is rejected with 'passphrases did not match'; unlock prompts once. Behavior byte-for-byte identical to the pre-fix UX (only the transient buffer is now zeroized on drop)."
-    why_human: "InteractivePassphrase is #[cfg(not(test))] — it cannot be linked or driven in any test build, and no-echo is a runtime TTY property grep/headless tests cannot observe. The gap-closure commit c2c3a83 modified these exact lines, so the prior UAT PASS (which covered pre-fix code) warrants a one-time re-confirmation."
+    why_human: "InteractivePassphrase is #[cfg(not(test))] — it cannot be linked or driven in any test build, and no-echo is a runtime TTY property grep/headless tests cannot observe. Corrected 2026-07-15: this cannot currently be run at all, because no CLI command constructs InteractivePassphrase — the prompt is unreachable through the shipped binary. 02-UAT Test 1 is BLOCKED (blocked_by: prior-phase) until a later phase wires an encrypted-store-creating command; it is not a 'light re-confirmation' of a prior pass."
 human_verification:
   - test: "Re-confirm the interactive no-echo confirm-twice passphrase prompt on the post-fix code (src/store/passphrase.rs, commit c2c3a83)."
-    expected: "No echo; new-store prompts twice + mismatch rejected + unrecoverability warning first; unlock prompts once. UX unchanged from the prior UAT PASS — the only change is the transient plaintext buffer is now wiped on drop."
-    why_human: "#[cfg(not(test))] TTY path; no-echo and confirm-twice are runtime terminal properties. The exact lines were modified by the WR-01 gap-closure, so a light re-confirmation is warranted."
+    expected: "No echo; new-store prompts twice + mismatch rejected + unrecoverability warning first; unlock prompts once. NOTE (2026-07-15): currently un-runnable — no CLI command reaches InteractivePassphrase, so this cannot be exercised through the shipped binary. Recorded BLOCKED in 02-UAT Test 1."
+    why_human: "#[cfg(not(test))] TTY path; no-echo and confirm-twice are runtime terminal properties. Blocked, not a light re-confirmation: the prompt has no CLI entry point in the current binary (verified 2026-07-15)."
 ---
 
 # Phase 2: Persistence & Storage — Verification Report (Re-verification)
@@ -45,7 +46,7 @@ The single actionable gap from the prior cycle — **WR-01** (the interactive `r
 
 **All 15 prior must-have truths regression-confirmed** by re-running the suite (see Behavioral Spot-Checks). No regressions. The two prior maintainer-decision warnings are resolved: WR-01 fixed (this cycle), WR-03 accepted (02-UAT.md test 3, no code change).
 
-The status is `human_needed` (not `passed`) solely because the `#[cfg(not(test))]` interactive no-echo/confirm-twice prompt is a runtime TTY property that cannot be exercised headlessly by design, and the gap-closure modified those exact lines — warranting a one-time re-confirmation of the (behavior-preserving) UX change. This does not block goal achievement.
+The status is `human_needed` (not `passed`) because the `#[cfg(not(test))]` interactive no-echo/confirm-twice prompt cannot be verified programmatically. **Corrected 2026-07-15:** this is not a "light re-confirmation of a prior PASS" — the prompt is unreachable through the shipped binary (no CLI command constructs `InteractivePassphrase`), so its runtime UX has never been observable end-to-end via the CLI and cannot be now. 02-UAT Test 1 is recorded `blocked` (blocked_by: prior-phase). The WR-01 zeroize fix is verified present in source; only the runtime TTY behavior is unverifiable, and it stays that way until a later phase wires an encrypted-store-creating command. This does not block the durable-state foundation itself.
 
 ## Goal Achievement
 
@@ -69,7 +70,7 @@ The status is `human_needed` (not `passed`) solely because the `#[cfg(not(test))
 | 14 | `cheget participant share-status` lists shares with NO unlock | ✓ VERIFIED | Regression — routes to `read_manifest`, no PassphraseSource constructed (unchanged by 02-05) |
 | 15 | Headless integration test drives persist→reload with in-code PassphraseSource, no TTY | ✓ VERIFIED | `cargo test --test store_headless` → `headless_persist_reload_no_prompt` passes |
 | 16 | **(WR-01 closure)** The transient rpassword plaintext buffer is zeroized on drop — the passphrase never persists in an un-zeroized String | ✓ VERIFIED | `src/store/passphrase.rs` lines 20, 84, 93–94, 85, 98: all 3 reads `Zeroizing`-wrapped (grep==3), owned copy moved into zeroize-on-drop `SecretString`; `cargo build` clean; `store::passphrase` unit test passes; commit c2c3a83 |
-| — | New-store confirm-twice / no-echo / warning UX preserved after the Zeroizing change (02-05 T2) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Control flow byte-for-byte preserved (warning 89–92, mismatch `*first != *second` 95–96, confirm flag) — but no-echo is a `#[cfg(not(test))]` TTY property; exact lines changed since prior UAT. See Human Verification. |
+| — | New-store confirm-twice / no-echo / warning UX preserved after the Zeroizing change (02-05 T2) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Control flow byte-for-byte preserved (warning 89–92, mismatch `*first != *second` 95–96, confirm flag) — but no-echo is a `#[cfg(not(test))]` TTY property and (corrected 2026-07-15) the prompt is unreachable via any CLI command, so it cannot be exercised through the shipped binary. 02-UAT Test 1 BLOCKED. See Human Verification. |
 
 **Score:** 16/16 must-have truths verified (1 present, behavior-unverified — the interactive TTY UX)
 
@@ -142,12 +143,12 @@ All three declared requirement IDs (STOR-01/02/03) accounted for. REQUIREMENTS.m
 
 **1. Re-confirm interactive no-echo confirm-twice passphrase prompt (post-fix code, D5)**
 - **Test:** Run `cheget` triggering new-store passphrase creation (`InteractivePassphrase::for_new_store`) at a real terminal, then the unlock path (`for_unlock`).
-- **Expected:** No echo while typing; new-store prompts twice with the unrecoverability warning printed first; a mismatch is rejected ("passphrases did not match"); unlock prompts once. UX byte-for-byte identical to the prior UAT PASS — the only change is the transient buffer is now wiped on drop.
-- **Why human:** `InteractivePassphrase` is `#[cfg(not(test))]`; no-echo is a runtime TTY property grep/headless tests cannot observe. The prior UAT PASS covered pre-fix code, and commit c2c3a83 modified these exact lines — a one-time re-confirmation of the behavior-preserving change is warranted.
+- **Expected:** No echo while typing; new-store prompts twice with the unrecoverability warning printed first; a mismatch is rejected ("passphrases did not match"); unlock prompts once. **Corrected 2026-07-15:** currently un-runnable — no CLI command constructs `InteractivePassphrase`, so the prompt cannot be reached through the shipped binary; there is no observed "prior UAT PASS" via the CLI to re-confirm against.
+- **Why human:** `InteractivePassphrase` is `#[cfg(not(test))]`; no-echo is a runtime TTY property grep/headless tests cannot observe. This is BLOCKED (not a re-confirmation): the prompt has no CLI entry point in the current binary (verified 2026-07-15). 02-UAT Test 1 is recorded `blocked` until a later phase wires an encrypted-store-creating command.
 
 ### Gaps Summary
 
-**No gaps.** The prior cycle's only actionable gap (WR-01) is genuinely closed in the codebase and regression-confirmed. All 16 must-have truths are VERIFIED with executed evidence; all three prior maintainer-decision items are resolved (WR-01 fixed, WR-03 accepted, interactive-UX re-flagged for a light post-change re-confirmation only). The durable-state foundation is functionally complete and behaviorally proven. Status is `human_needed` purely because the `#[cfg(not(test))]` no-echo TTY UX cannot be verified programmatically and its lines changed since the last human test — not because anything is missing or broken.
+**No code gaps.** The prior cycle's only actionable gap (WR-01) is genuinely closed in the codebase and regression-confirmed. All 16 must-have truths are VERIFIED with executed evidence. Maintainer-decision items: WR-01 fixed, WR-03 accepted. Two REVIEW CRITICAL findings from 02-REVIEW.md — CR-01 (`KeyId` unvalidated) and CR-02 (non-atomic schema migration) — were also resolved in code (KeyId now has a private field + validating `KeyId::new`/`KeyIdError`, `types.rs:23,39-49`; the migration now runs in a transaction with test `migrate_is_atomic_on_failure`, `coordinator/mod.rs:343-346`). The durable-state foundation is functionally complete and behaviorally proven. Status is `human_needed` — **not** because of a pending "re-confirmation," but because the `#[cfg(not(test))]` interactive prompt is unreachable through the shipped binary (verified 2026-07-15) and so its runtime no-echo UX cannot be exercised at all; 02-UAT Test 1 is recorded `blocked`. Nothing in the delivered scope is missing or broken.
 
 ---
 

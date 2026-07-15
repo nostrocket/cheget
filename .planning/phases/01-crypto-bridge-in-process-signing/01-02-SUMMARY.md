@@ -13,7 +13,7 @@ provides:
   - "Client-side group-key confirmation confirm_group_key() with mismatch-abort (KEY-05)"
   - "EphemeralNonces: move-only, non-serializable, Zeroizing signing-nonce newtype; commit()/sign(self) (SIGN-05)"
   - "cheget keygen (simulate-all-seats, D-08) writing only the public PublicKeyPackage envelope (D-09)"
-  - "n=100 correctness proof + O(n^2) timing/RSS instrumentation, #[ignore] (KEY-06, D-03)"
+  - "n=100 correctness proof + O(n^2) timing/RSS instrumentation, runs by default (KEY-06, D-03)"
   - "crypto/types.rs: KeyId / Epoch / SeatId tagging newtypes"
 affects: [01-04-signing, 01-05-transport, phase-02-persistence, phase-04-rotation, phase-07-transport]
 
@@ -93,7 +93,7 @@ coverage:
     requirement: KEY-06
     verification:
       - kind: integration
-        ref: "tests/dkg_100_correctness.rs#dkg_100_all_shares_verify_to_one_group_key (#[ignore]; verified at n=150/300/500, all pass; full 51/100 exceeds sandbox process time limit)"
+        ref: "tests/dkg_100_correctness.rs#dkg_100_all_shares_verify_to_one_group_key (runs by default at t=51/n=100; passes in 4.30s, re-verified 2026-07-15)"
         status: pass
     human_judgment: true
     rationale: "The mandated 51/100 run is a ~70-min / ~13-CPU-hour nightly job (D-06) that exceeds the sandbox's ~60-min background-process limit; correctness + O(n^2) scaling were proven at n=150/300/500 completing runs, but a human must run the full-scale nightly measurement to record the final 51/100 numbers."
@@ -121,7 +121,7 @@ status: complete
 - `run_inprocess_dkg(t, n)` (`src/crypto/keygen.rs`) — full `part1/part2/part3` across `n` simulated seats entirely in-process (no transport, KEY-02), both packages normalized to even-Y via `into_even_y(None)` (D-11), group-key agreement enforced across all seats. Returns every seat's `KeyPackage` + the one group `PublicKeyPackage`.
 - `confirm_group_key()` — mandatory client-side gate: any seat whose verifying key disagrees with the group key returns `KeygenError::GroupKeyMismatch` and aborts (KEY-05).
 - `cheget keygen` (`src/cli/keygen.rs`) — simulate-all-seats mode (D-08); default 3-of-5, `--full` gates the real 51/100 (D-02). Writes **only** the public `PublicKeyPackage` envelope (D-09) to `--out`; the produced address round-trips through `cheget watcher address` (verified `bcrt1p…`).
-- `tests/dkg_100_correctness.rs` (`#[ignore]`, KEY-06/D-03) — asserts all `n` KeyPackages verify to one even-Y group key and prints per-part (part1/part2/part3) wall-clock + peak resident set. Rounds 2/3 are parallelized across seats. Measured scaling (all passing): n=150 → 15.6 s, n=300 → 120 s, n=500 → 547 s, with part3 (round-3 share verification) dominating and scaling ~n³ (= n² verifications × O(t) each).
+- `tests/dkg_100_correctness.rs` (KEY-06/D-03) — asserts all `n` KeyPackages verify to one even-Y group key and prints per-part (part1/part2/part3) wall-clock + peak resident set. Rounds 2/3 are parallelized across seats. **Runs by default (no `#[ignore]`)** at t=51/n=100. Current measured cost (re-verified 2026-07-15, post-speedup): total 4.30s — part1=160ms, part2=99ms, part3=4.04s (round-3 share verification dominates), peak RSS 16.9 MiB. _(Historical note: this file began as `dkg_1000_correctness.rs` at t=501/n=1000, where the run was multi-CPU-hour and `#[ignore]`d; quick-task 260713-jqs rescaled the project to 51/100 and 260713-itg/c537bf0 sped it up and un-ignored it. The n=1000-era scaling figures are recorded in the historical sections below.)_
 - `crypto/` remains pure (no chain/transport/filesystem imports — verified).
 
 ## Task Commits
@@ -129,7 +129,7 @@ status: complete
 1. **Task 1: Non-serializable EphemeralNonces + trybuild proof (SIGN-05)** — `baf0849` (feat)
 2. **Task 2 (TDD RED): failing 3-of-5 DKG correctness + confirmation tests** — `b9fd775` (test)
 3. **Task 2 (TDD GREEN): in-process (t,n) DKG + even-Y + confirmation + keygen cmd** — `f7d17d2` (feat)
-4. **Task 3: n=100 correctness proof + O(n²) timing/RSS instrumentation** — `e009066` (test)
+4. **Task 3: n=100 correctness proof + O(n²) timing/RSS instrumentation** — `e009066` (test) — created the file as `tests/dkg_1000_correctness.rs` (t=501/n=1000); renamed to `dkg_100_correctness.rs` and rescaled to 51/100 by quick-task 260713-jqs, then un-ignored by c537bf0.
 
 _TDD gate satisfied for Task 2: `test(…)` RED commit precedes the `feat(…)` GREEN commit._
 
@@ -141,7 +141,7 @@ _TDD gate satisfied for Task 2: `test(…)` RED commit precedes the `feat(…)` 
 - `src/crypto/mod.rs` — declares + re-exports the three modules (was a placeholder stub)
 - `src/cli/keygen.rs` — wired keygen handler (was a D-08 stub): resolves (t,n), runs DKG, writes public envelope
 - `tests/dkg_small.rs` — 3-of-5 correctness, even-Y, bridge-to-address, corrupted-seat abort
-- `tests/dkg_100_correctness.rs` — `#[ignore]` KEY-06 correctness + O(n²) instrumentation (scale-overridable)
+- `tests/dkg_100_correctness.rs` — runs-by-default KEY-06 correctness + O(n²) instrumentation (scale-overridable via `CHEGET_DKG_T`/`CHEGET_DKG_N`, default 51/100)
 - `tests/ui/nonce_no_serialize.rs` + `tests/ui/nonce_no_serialize.stderr` — trybuild compile-fail case + snapshot
 - `tests/compile_fail.rs` — trybuild driver
 
@@ -175,34 +175,34 @@ _TDD gate satisfied for Task 2: `test(…)` RED commit precedes the `feat(…)` 
 
 ---
 
-**Total deviations:** 2 auto-fixed (both Rule 3, both confined to the `#[ignore]` measurement test). No changes to production crypto behavior; no scope creep. The default test scale remains the mandated 51/100.
+**Total deviations:** 2 auto-fixed (both Rule 3, both confined to the then-`#[ignore]`d measurement test; the test now runs by default at 51/100). No changes to production crypto behavior; no scope creep. The default test scale is the mandated 51/100.
 
 ## Issues Encountered
 
-- **Full 51/100 measurement exceeds the sandbox time budget.** Two separate full-scale background runs were killed by the harness at ~60 min (still in round-3 verification). Root cause is inherent: n(n−1) ≈ 10⁴ round-3 share verifications, each an MSM over t=51 commitment coefficients (~13 CPU-hours total; ~70 min wall even across 11 cores). This is precisely the O(n²) compute cost KEY-06/D-03 exists to surface. Correctness and the scaling law were proven with completing runs at n=150/300/500; the final 51/100 numbers require a human to run the nightly job (see coverage D5, `human_judgment: true`).
+- **[Original n=1000 regime] Full-scale measurement exceeded the sandbox time budget.** At the phase's original target (t=501/n=1000), two full-scale background runs were killed by the harness at ~60 min (still in round-3 verification): n(n−1) ≈ 10⁶ round-3 share verifications, ~13 CPU-hours total. This is the O(n²) compute cost KEY-06/D-03 exists to surface. **[Updated 2026-07-15]** The project was subsequently rescaled to the current fixed 51/100 (quick-task 260713-jqs) and the DKG parallelized/optimized (260713-itg); at 51/100 the full run now completes in ~4.3s and runs by default (re-verified: 4.30s, part3=4.04s). The n=150/300/500 scaling figures recorded above are from the original regime.
 
 ## User Setup Required
 
 None - no external service configuration required.
 
-To record the final full-scale KEY-06 numbers (nightly / on-demand, D-06):
+The full-scale KEY-06 run now runs by default (no `#[ignore]`, no `--ignored`):
 ```
-cargo test --release --test dkg_100_correctness -- --ignored --nocapture
+cargo test --release --test dkg_100_correctness -- --nocapture
 ```
-(~70 min wall-clock on ~11 cores; prints part1/part2/part3 wall-clock + peak RSS. Correctness is already proven; this run records the full-scale O(n²) figures.)
+(~4.3s at t=51/n=100 post-speedup; prints part1/part2/part3 wall-clock + peak RSS. Re-verified 2026-07-15: total 4.30s, part3=4.04s, peak RSS 16.9 MiB.)
 
 ## Next Phase Readiness
 
 - 01-04 (signing session) can consume `EphemeralNonces::commit`/`sign` for participant-side round1/round2 and aggregate via the coordinator path; nonce discipline is enforced at the type level from the first line.
 - The DKG hands a `KeyPackage` map + group `PublicKeyPackage` to any orchestrator; even-Y is guaranteed so `bridge::address_from_group_key` / `output_key_q` accept it directly.
 - `Epoch`/`KeyId` newtypes are ready for Phase 4 rotation tagging; persistence of the key material at scale is deferred to Phase 2 (D-04).
-- **Feasibility flag for Phase 7:** in-process n=100 DKG compute is ~13 CPU-hours (round-3-verification bound). This de-risks the compute dimension ahead of the transport-layer load test (TRAN-08); the two costs are now cleanly separated.
+- **Feasibility flag for Phase 7:** in-process DKG compute at the current 51/100 target is ~4.3s (round-3-verification bound; re-verified 2026-07-15). _(The ~13-CPU-hour figure elsewhere in this doc was the original t=501/n=1000 target before quick-task 260713-jqs rescaled the project to 51/100.)_ This de-risks the compute dimension ahead of the transport-layer load test (TRAN-08); the two costs are cleanly separated.
 
 ## Self-Check: PASSED
 
 - All 9 plan files verified present on disk (5 source/test + 4 test-support/summary).
 - All 4 task commits verified in git history: baf0849, b9fd775, f7d17d2, e009066.
-- `cargo build` exit 0; `cargo test` (fast gate) green: bridge_roundtrip 3, compile_fail 1, dkg_small 2, dkg_100_correctness 1 ignored (by design); `cargo clippy --lib` clean.
+- `cargo build` exit 0; `cargo test` green: bridge_roundtrip 3, compile_fail 1 (Phase-1-era; now 4), dkg_small 2, dkg_100_correctness runs by default and passes (1/1, 4.30s — re-verified 2026-07-15, no longer `#[ignore]`d); `cargo clippy --lib` clean.
 - `crypto/` purity confirmed (no chain/transport/filesystem imports).
 
 ---
