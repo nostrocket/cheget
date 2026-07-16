@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Crypto Bridge & In-Process Signing** - Prove the frost↔rust-bitcoin bridge and a confirmed regtest 51-of-100 key-spend with zero transport; introduce the `Transport` trait + in-memory stub (completed 2026-07-10)
 - [x] **Phase 2: Persistence & Storage** - Age/scrypt participant store, encrypted between-round checkpointing, and the coordinator SQLite store — the durable-state foundation (completed 2026-07-14)
-- [ ] **Phase 3: DKG at Scale — Local** - Wire the proven crypto to the persistent store at n=100: `keygen` persists the full share set (unblocking the Phase 2 store-creation UAT); `sign` loads persisted shares for a confirmed regtest key-spend
+- [x] **Phase 3: DKG at Scale — Local** - Wire the proven crypto to the persistent store at n=100: `keygen` persists the full share set (unblocking the Phase 2 store-creation UAT); `sign` loads persisted shares for a confirmed regtest key-spend (completed 2026-07-16)
 - [ ] **Phase 4: Membership Rotation** - Refresh, enroll, and repair over the in-memory stub with client-side same-key check and epoch discipline
 - [ ] **Phase 5: Key Lifecycle & Revocation** - Standby key, sweep + rollover, and the policy-driven watcher over the in-memory stub (the true revocation path)
 - [ ] **Phase 6: Hardening & Security-Reviewable Release** - Reproducible builds, pinned/audited deps, locally-verifiable adversarial suite, external review — all without real transport
@@ -103,7 +103,7 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
   2. `cheget sign` loads 51 of the persisted store roots, drives the signing session, and produces a confirmed regtest key-spend from those PERSISTED shares (not a fresh in-process DKG), proving the store→sign path end to end
   3. The wiring is verified at small n in the PR gate and run once at the full n=100 as a functional smoke; n=100 DKG correctness and the O(n²) measurement are already satisfied by Phase 1 (`tests/dkg_100_correctness.rs` + quick task 260713-jqs) — no re-measurement
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -112,7 +112,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md [W2]: `sign` ← store — load 51 persisted store roots and re-prove the confirmed regtest key-spend from persisted shares (small-n PR gate + one-time #[ignore] full-100 functional smoke) (KEY-06)
+- [x] 03-02-PLAN.md [W2]: `sign` ← store — load 51 persisted store roots and re-prove the confirmed regtest key-spend from persisted shares (small-n PR gate + one-time #[ignore] full-100 functional smoke) (KEY-06)
 
 ### Phase 4: Membership Rotation
 
@@ -210,7 +210,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Crypto Bridge & In-Process Signing | 5/5 | Complete   | 2026-07-10 |
 | 2. Persistence & Storage | 5/5 | Complete   | 2026-07-14 |
-| 3. DKG at Scale — Local | 1/2 | In Progress|  |
+| 3. DKG at Scale — Local | 2/2 | Complete   | 2026-07-16 |
 | 4. Membership Rotation | 0/4 | Not started | - |
 | 5. Key Lifecycle & Revocation | 0/4 | Not started | - |
 | 6. Hardening & Security-Reviewable Release | 0/3 | Not started | - |

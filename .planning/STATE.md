@@ -6,15 +6,15 @@ current_phase: 03
 current_phase_name: dkg-at-scale-local
 status: planning
 stopped_at: "Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)"
-last_updated: "2026-07-16T05:56:18.755Z"
+last_updated: "2026-07-16T06:22:59.120Z"
 last_activity: 2026-07-16
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 12
-  completed_plans: 11
-  percent: 29
+  completed_plans: 12
+  percent: 43
 ---
 
 # Project State
@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-07-10)
 
 ## Current Position
 
-Phase: 03 (dkg-at-scale-local) — EXECUTING
-Verification: human_needed — 02-UAT Test 1 recorded BLOCKED (interactive passphrase prompt has no CLI entry point yet; WR-01 fix verified in source)
-Next: Phase 03 (DKG at Scale — Local) — not yet planned (no phase directory)
-Last activity: 2026-07-16 — Phase 03 execution started
+Phase: 03 (dkg-at-scale-local) — EXECUTING (03-01, 03-02 plans complete)
+Verification: human_needed — 02-UAT Test 1 BLOCKED (interactive passphrase prompt); keygen --persist (03-01) + sign --persist (03-02) now drive InteractivePassphrase::for_new_store/for_unlock — re-confirm the interactive UX via /gsd-verify-work
+Next: verify Phase 03, then transition
+Last activity: 2026-07-16 — 03-02 (sign-from-store) complete: confirmed regtest key-spend from PERSISTED shares (D-05)
 
-Progress: [████░░░░░░░░░░] 2/7 phases complete (29%) · 10/10 executed plans
+Progress: [██████░░░░░░░░] 3/7 phases complete (43%) · 12/12 executed plans
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [████░░░░░░░░░░] 2/7 phases complete (29%)
 | Phase 02 P04 | 24 min | 3 tasks | 6 files |
 | Phase 02 P05 | not recorded | 2 tasks | (gap-closure: passphrase.rs zeroize) |
 | Phase 03 P01 | 25 | 3 tasks | 5 files |
+| Phase 03 P02 | 12min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [02-01]: store layer = StoreError (manual idiom) + write_atomic (D-07) + age/scrypt log_n=18 Zeroizing decrypt (D-06) + PassphraseSource seam (interactive/in-code).
 - [Phase 02]: 02-02: IdentityKeypair transport key is structurally non-derivable from FROST material (no From/TryFrom), proven by a trybuild compile-fail snapshot (D-13)
 - [Phase ?]: 03-01: keygen --persist writes per-seat encrypted seat-NNNN roots via pub persist_dkg_shares under one prompt-once ResolvedPassphrase (D-02/D-03/D-04)
+- [Phase ?]: [03-02]: sign --persist loads first-t seat-NNNN roots (prompt-once for_unlock) via pub load_persisted_shares -> load_only_active -> existing SigningSession; confirmed regtest key-spend from PERSISTED shares (D-05), SIGN-05/SIGN-07 preserved
 
 ### Pending Todos
 
@@ -118,6 +120,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-16T05:55:40.685Z
+Last session: 2026-07-16T06:21:41.139Z
 Stopped at: Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)
 Resume file: .planning/phases/03-dkg-at-scale-local/03-CONTEXT.md
