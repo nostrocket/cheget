@@ -36,7 +36,9 @@ pub use crypto::{decrypt_secret, encrypt_secret};
 pub use identity::IdentityKeypair;
 pub use manifest::{Manifest, ShareEntry, ShareState};
 pub use participant::{ParticipantStore, ShareTag};
-pub use passphrase::{InCodePassphrase, PassphraseSource};
+pub use passphrase::{InCodePassphrase, PassphraseSource, ResolvedPassphrase};
+#[cfg(not(test))]
+pub use passphrase::InteractivePassphrase;
 
 /// Environment variable that overrides the store root path (testability / CI
 /// seam). It is a **path** override only — never a passphrase source (D-01/D-03).

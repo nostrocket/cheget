@@ -51,6 +51,33 @@ impl PassphraseSource for InCodePassphrase {
     }
 }
 
+/// A passphrase already acquired once (interactively) and reused for every
+/// per-seat store (D-04 — prompt once, serve 100 roots).
+///
+/// Structurally the same as [`InCodePassphrase`], but constructed from an
+/// already-resolved [`SecretString`] rather than a plain string literal, and
+/// intended for **production** reuse: the CLI edge prompts once via
+/// [`InteractivePassphrase::for_new_store`], then hands each of the 100 per-seat
+/// `ParticipantStore` instances a `ResolvedPassphrase` clone so the terminal
+/// prompt runs exactly once, never 100×. It is deliberately NOT `#[cfg]`-gated —
+/// it ships in production and test builds alike. It is NOT an env/flag source
+/// (D-01/D-03): it only ever holds a secret obtained through the interactive
+/// prompt (or, in tests, an injected [`InCodePassphrase`]-equivalent).
+pub struct ResolvedPassphrase(SecretString);
+
+impl ResolvedPassphrase {
+    /// Wrap an already-acquired store passphrase for prompt-once reuse (D-04).
+    pub fn new(secret: SecretString) -> Self {
+        Self(secret)
+    }
+}
+
+impl PassphraseSource for ResolvedPassphrase {
+    fn passphrase(&self) -> Result<SecretString, StoreError> {
+        Ok(self.0.clone())
+    }
+}
+
 /// Interactive, no-echo passphrase prompt (production, D-01/D-04).
 ///
 /// Reads directly into a [`SecretString`] via `rpassword` so the passphrase is

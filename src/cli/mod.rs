@@ -86,11 +86,48 @@ pub struct RosterArgs {
 
 /// Resolve the store root, honoring an explicit `--home` override over the
 /// `CHEGET_HOME`/`~/.cheget` resolution.
-fn resolve_root(home: Option<std::path::PathBuf>) -> Result<std::path::PathBuf, StoreError> {
+///
+/// `pub(crate)` so the keygen writer (03-01) and the sign reader (03-02) share
+/// one root-resolution path.
+pub(crate) fn resolve_root(
+    home: Option<std::path::PathBuf>,
+) -> Result<std::path::PathBuf, StoreError> {
     match home {
         Some(path) => Ok(path),
         None => Ok(StoreRoot::resolve()?.path().to_path_buf()),
     }
+}
+
+/// Acquire the single store passphrase at the thin CLI edge (D-04).
+///
+/// This is the ONLY place the interactive prompt is constructed; the persist /
+/// load loops take a [`crate::store::PassphraseSource`] so they never touch a
+/// terminal (pattern-map hazard 3). `confirm` selects the create-time
+/// confirm-twice `for_new_store` path vs. the single-prompt `for_unlock` path.
+#[cfg(not(test))]
+pub(crate) fn acquire_store_passphrase(
+    confirm: bool,
+) -> Result<age::secrecy::SecretString, StoreError> {
+    use crate::store::InteractivePassphrase;
+    use crate::store::PassphraseSource;
+    let source = if confirm {
+        InteractivePassphrase::for_new_store()
+    } else {
+        InteractivePassphrase::for_unlock()
+    };
+    source.passphrase()
+}
+
+/// Test build: `InteractivePassphrase` is `#[cfg(not(test))]`, so return a fixed
+/// passphrase to keep the lib compiling under `cargo test` without linking a
+/// terminal prompt (pattern-map hazard 3).
+#[cfg(test)]
+pub(crate) fn acquire_store_passphrase(
+    _confirm: bool,
+) -> Result<age::secrecy::SecretString, StoreError> {
+    Ok(age::secrecy::SecretString::from(
+        "test-store-passphrase".to_string(),
+    ))
 }
 
 /// Handler: list held shares from the store with no unlock (D-05).
