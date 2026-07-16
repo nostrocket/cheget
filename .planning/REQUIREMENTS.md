@@ -14,7 +14,7 @@ Requirements for the initial release covering SPEC milestones M1–M5. Each maps
 - [x] **KEY-03**: A byte-level round-trip test pins the frost→rust-bitcoin key bridge (33-byte SEC1 → 32-byte x-only → `XOnlyPublicKey` → `Address::p2tr(secp, internal, None, network)`), asserting x-only parity and internal-vs-output-key correctness
 - [x] **KEY-04**: `cheget address [--key active|standby]` prints the BIP341 P2TR address (`Q = P + H_taproot(P)·G`, merkle root `None`), constant across all refresh epochs
 - [x] **KEY-05**: Each participant confirms the group verifying key to the coordinator after keygen; any mismatch aborts the ceremony
-- [ ] **KEY-06**: DKG generates the full n=100 share set in-process on a single host with no transport, producing 100 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test). *(Correctness + O(n²) measurement already satisfied by Phase 1 — `tests/dkg_100_correctness.rs`; the persist/reload-through-real-commands half is delivered when Phase 3 executes — see reframed Phase 3.)*
+- [x] **KEY-06**: DKG generates the full n=100 share set in-process on a single host with no transport, producing 100 `KeyPackage`s that all verify to one group `PublicKeyPackage`; validates the O(n²) computation scales locally (distinct from the transport-layer load test). *(Correctness + O(n²) measurement already satisfied by Phase 1 — `tests/dkg_100_correctness.rs`; the persist/reload-through-real-commands half is delivered when Phase 3 executes — see reframed Phase 3.)*
 
 ### Signing (SIGN)
 

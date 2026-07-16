@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-current_phase_name: persistence-storage
+current_phase: 03
+current_phase_name: dkg-at-scale-local
 status: planning
 stopped_at: "Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)"
-last_updated: "2026-07-15T11:13:43.237Z"
-last_activity: 2026-07-15
-last_activity_desc: GSD docs reconciled with codebase
+last_updated: "2026-07-16T05:56:18.755Z"
+last_activity: 2026-07-16
+last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
   percent: 29
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-10)
 
 **Core value:** A group of 100 can jointly control one Bitcoin address (any 51 can spend, no individual holds the key), rotate membership with zero on-chain cost, and truly revoke past compromise by sweeping to a standby key.
-**Current focus:** Phase 03 — dkg-at-scale-local (next to plan). Phase 02 implementation is complete; one verification item is outstanding (see Blockers).
+**Current focus:** Phase 03 — dkg-at-scale-local
 
 ## Current Position
 
-Phase: 02 (persistence-storage) — IMPLEMENTATION COMPLETE (5/5 plans + summaries)
+Phase: 03 (dkg-at-scale-local) — EXECUTING
 Verification: human_needed — 02-UAT Test 1 recorded BLOCKED (interactive passphrase prompt has no CLI entry point yet; WR-01 fix verified in source)
 Next: Phase 03 (DKG at Scale — Local) — not yet planned (no phase directory)
-Last activity: 2026-07-15 — GSD docs reconciled with codebase
+Last activity: 2026-07-16 — Phase 03 execution started
 
 Progress: [████░░░░░░░░░░] 2/7 phases complete (29%) · 10/10 executed plans
 
@@ -56,6 +56,7 @@ Progress: [████░░░░░░░░░░] 2/7 phases complete (29%)
 | Phase 02 P03 | 16 min | 2 tasks | 8 files |
 | Phase 02 P04 | 24 min | 3 tasks | 6 files |
 | Phase 02 P05 | not recorded | 2 tasks | (gap-closure: passphrase.rs zeroize) |
+| Phase 03 P01 | 25 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [02-01]: rpassword APPROVED (Task 1); license Apache-2.0 not MIT (benign). No passphrase env/CLI flag ships (D-01/D-03); CHEGET_HOME is path-override only.
 - [Phase ?]: [02-01]: store layer = StoreError (manual idiom) + write_atomic (D-07) + age/scrypt log_n=18 Zeroizing decrypt (D-06) + PassphraseSource seam (interactive/in-code).
 - [Phase 02]: 02-02: IdentityKeypair transport key is structurally non-derivable from FROST material (no From/TryFrom), proven by a trybuild compile-fail snapshot (D-13)
+- [Phase ?]: 03-01: keygen --persist writes per-seat encrypted seat-NNNN roots via pub persist_dkg_shares under one prompt-once ResolvedPassphrase (D-02/D-03/D-04)
 
 ### Pending Todos
 
@@ -116,6 +118,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-15T11:03:22.668Z
+Last session: 2026-07-16T05:55:40.685Z
 Stopped at: Phase 3 context gathered (reframed to CLI wiring: keygen→store, sign←store)
 Resume file: .planning/phases/03-dkg-at-scale-local/03-CONTEXT.md

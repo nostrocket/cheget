@@ -103,12 +103,12 @@ Plans (waves: W1=02-01 → W2=02-02 → W3={02-03, 02-04} parallel; gap closure:
   2. `cheget sign` loads 51 of the persisted store roots, drives the signing session, and produces a confirmed regtest key-spend from those PERSISTED shares (not a fresh in-process DKG), proving the store→sign path end to end
   3. The wiring is verified at small n in the PR gate and run once at the full n=100 as a functional smoke; n=100 DKG correctness and the O(n²) measurement are already satisfied by Phase 1 (`tests/dkg_100_correctness.rs` + quick task 260713-jqs) — no re-measurement
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md [W1]: `keygen` → store — run the in-process DKG and persist the full share set as 100 per-seat encrypted roots (prompt-once passphrase reuse seam); the first command to create an encrypted store, unblocking the Phase 2 store-creation UAT (KEY-06)
+- [x] 03-01-PLAN.md [W1]: `keygen` → store — run the in-process DKG and persist the full share set as 100 per-seat encrypted roots (prompt-once passphrase reuse seam); the first command to create an encrypted store, unblocking the Phase 2 store-creation UAT (KEY-06)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -210,7 +210,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Crypto Bridge & In-Process Signing | 5/5 | Complete   | 2026-07-10 |
 | 2. Persistence & Storage | 5/5 | Complete   | 2026-07-14 |
-| 3. DKG at Scale — Local | 0/2 | Not started | - |
+| 3. DKG at Scale — Local | 1/2 | In Progress|  |
 | 4. Membership Rotation | 0/4 | Not started | - |
 | 5. Key Lifecycle & Revocation | 0/4 | Not started | - |
 | 6. Hardening & Security-Reviewable Release | 0/3 | Not started | - |
