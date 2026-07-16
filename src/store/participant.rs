@@ -316,4 +316,59 @@ mod tests {
 
         std::fs::remove_dir_all(&root).ok();
     }
+
+    #[test]
+    fn load_only_active_roundtrip_and_hex_inverse() {
+        // `seat_from_hex` inverts `manifest::seat_hex` for a range of seats.
+        for i in [1u16, 7, 51, 100] {
+            let id: SeatId = i.try_into().expect("valid frost identifier");
+            let hex = seat_hex(&id);
+            let back = seat_from_hex(&hex).expect("hex → SeatId round-trips");
+            assert_eq!(back, id, "seat_from_hex must invert seat_hex for seat {i}");
+        }
+
+        // A malformed hex string errors (StoreError), never panics.
+        assert!(
+            seat_from_hex("not-hex").is_err(),
+            "malformed seat hex must Err, not panic"
+        );
+
+        // put_share(Active) then load_only_active returns the sole active share.
+        let (shares, group) = run_inprocess_dkg(3, 5).unwrap();
+        let (&seat_id, key_package) = shares.iter().next().unwrap();
+
+        let root = temp_root();
+        let store = ParticipantStore::new(
+            root.clone(),
+            Box::new(InCodePassphrase::new("test-store-passphrase")),
+        );
+        let tag = ShareTag::new(KeyId::active(), Epoch::GENESIS, seat_id);
+        store
+            .put_share(&tag, key_package, &group, ShareState::Active)
+            .unwrap();
+
+        let (seat, kp2) = store
+            .load_only_active()
+            .expect("load the store's sole active share");
+        assert_eq!(seat, seat_id, "load_only_active returns the stored seat");
+        assert_eq!(
+            kp2.serialize().unwrap(),
+            key_package.serialize().unwrap(),
+            "load_only_active KeyPackage is byte-equal to the stored one"
+        );
+
+        // A store with no ACTIVE entry is an Err, not a panic.
+        let empty_root = temp_root();
+        let empty = ParticipantStore::new(
+            empty_root.clone(),
+            Box::new(InCodePassphrase::new("test-store-passphrase")),
+        );
+        assert!(
+            empty.load_only_active().is_err(),
+            "a store with no active share must Err, not panic"
+        );
+
+        std::fs::remove_dir_all(&root).ok();
+        std::fs::remove_dir_all(&empty_root).ok();
+    }
 }
