@@ -114,4 +114,27 @@ mod tests {
         let plaintext = decrypt_secret(&source.passphrase().unwrap(), &ciphertext).unwrap();
         assert_eq!(plaintext.as_slice(), secret.as_slice());
     }
+
+    #[test]
+    fn resolved_passphrase_reuses_one_secret_across_calls_and_stores() {
+        // The prompt-once reuse seam (D-04): a single already-acquired
+        // SecretString is handed out on every `passphrase()` call with no prompt.
+        let secret = SecretString::from("prompt-once-secret".to_string());
+        let source = ResolvedPassphrase::new(secret.clone());
+        let bytes = b"one passphrase, many roots";
+
+        // Idempotent reuse: encrypt then decrypt with the SAME source succeeds.
+        let ciphertext = encrypt_secret(&source.passphrase().unwrap(), bytes).unwrap();
+        let plaintext = decrypt_secret(&source.passphrase().unwrap(), &ciphertext).unwrap();
+        assert_eq!(plaintext.as_slice(), bytes.as_slice());
+
+        // Two independent per-seat sources built from the same resolved secret
+        // encrypt/decrypt interchangeably — one entered passphrase serves all
+        // 100 per-seat roots without re-prompting (D-04).
+        let seat_a = ResolvedPassphrase::new(secret.clone());
+        let seat_b = ResolvedPassphrase::new(secret.clone());
+        let ct = encrypt_secret(&seat_a.passphrase().unwrap(), bytes).unwrap();
+        let pt = decrypt_secret(&seat_b.passphrase().unwrap(), &ct).unwrap();
+        assert_eq!(pt.as_slice(), bytes.as_slice());
+    }
 }
