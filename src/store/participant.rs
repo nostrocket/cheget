@@ -116,6 +116,31 @@ impl ParticipantStore {
         Ok(())
     }
 
+    /// Load this store's sole `ACTIVE` genesis share as `(SeatId, KeyPackage)`.
+    ///
+    /// Each per-seat root written by 03-01 (`keygen --persist`) holds exactly one
+    /// `ShareState::Active` genesis entry. This reads the plaintext manifest,
+    /// selects that entry, reconstructs its `(key_id, epoch, seat)` tag — the
+    /// `SeatId` via [`seat_from_hex`] (inverse of [`manifest::seat_hex`]) and the
+    /// `KeyId` via [`KeyId::new`], which re-validates the id as a safe path
+    /// component (T-02-12) — then decrypts the share through [`load_share`]. A
+    /// store with no active entry returns [`StoreError::Manifest`] rather than
+    /// panicking (T-03-08). The single-call read glue the 03-02 sign path uses.
+    pub fn load_only_active(&self) -> Result<(SeatId, KeyPackage), StoreError> {
+        let manifest = self.load_manifest()?;
+        let entry = manifest
+            .shares
+            .iter()
+            .find(|e| e.state == ShareState::Active)
+            .ok_or_else(|| StoreError::Manifest("no active share".to_string()))?;
+        let key_id =
+            KeyId::new(entry.key_id.clone()).map_err(|e| StoreError::Manifest(e.to_string()))?;
+        let epoch = Epoch(entry.epoch);
+        let seat = seat_from_hex(&entry.seat)?;
+        let tag = ShareTag::new(key_id, epoch, seat);
+        Ok((seat, self.load_share(&tag)?))
+    }
+
     /// Load and decrypt a share, returning the `KeyPackage`.
     ///
     /// The decrypted bytes live in a [`Zeroizing`] buffer scoped to this call and
@@ -216,6 +241,31 @@ fn map_envelope_err(e: EnvelopeError) -> StoreError {
         EnvelopeError::Io(io) => StoreError::Io(io),
         other => StoreError::Manifest(other.to_string()),
     }
+}
+
+/// Reconstruct a [`SeatId`] from its lowercase-hex spelling — the inverse of
+/// [`manifest::seat_hex`].
+///
+/// Decodes the hex to bytes (bad/odd/non-hex input → [`StoreError::Manifest`])
+/// then validates them as a frost identifier via
+/// [`frost::Identifier::deserialize`] (invalid identifier → [`StoreError::Frost`]).
+/// A malformed manifest entry therefore surfaces a clear error instead of a
+/// panic (T-03-08).
+fn seat_from_hex(hex: &str) -> Result<SeatId, StoreError> {
+    if hex.len() % 2 != 0 {
+        return Err(StoreError::Manifest(format!(
+            "seat hex {hex:?} has an odd length"
+        )));
+    }
+    let mut bytes = Vec::with_capacity(hex.len() / 2);
+    for pair in hex.as_bytes().chunks(2) {
+        let s = std::str::from_utf8(pair)
+            .map_err(|_| StoreError::Manifest(format!("seat hex {hex:?} is not ascii")))?;
+        let b = u8::from_str_radix(s, 16)
+            .map_err(|_| StoreError::Manifest(format!("seat hex {hex:?} is not valid hex")))?;
+        bytes.push(b);
+    }
+    frost::Identifier::deserialize(&bytes).map_err(StoreError::Frost)
 }
 
 /// The parent directory of `path`, or an `InvalidInput` I/O error.
