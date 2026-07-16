@@ -21,6 +21,8 @@
 //! end-to-end confirmed key-spend.
 #![allow(dead_code)]
 
+use std::collections::BTreeMap;
+
 use bitcoin::absolute::LockTime;
 use bitcoin::transaction::Version;
 use bitcoin::{
@@ -28,6 +30,9 @@ use bitcoin::{
 };
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use corepc_node::Node;
+use frost_secp256k1_tr as frost;
+use frost::keys::{KeyPackage, PublicKeyPackage};
+use frost::Identifier;
 use cheget::bridge::{address_from_group_key, internal_key_xonly};
 use cheget::chain::{ChainBackend, CoreRpcBackend};
 use cheget::crypto::run_inprocess_dkg;
@@ -100,13 +105,29 @@ pub fn spawn_regtest() -> RegtestFixture {
 /// broadcast → mine → assert the spend is confirmed. Panics on any failure so the
 /// caller is a one-line `#[test]`.
 pub fn run_confirmed_key_spend(t: u16, n: u16) {
+    // In-process DKG (simulate all seats, D-08) → group key (even-Y), then the
+    // shared chain-proof body. Existing fresh-DKG callers keep this entry point.
+    let (key_packages, group) = run_inprocess_dkg(t, n).expect("in-process DKG");
+    run_confirmed_key_spend_from_shares(key_packages, group, t);
+}
+
+/// The chain-proof body of [`run_confirmed_key_spend`], taking PRE-LOADED shares.
+///
+/// Spins up a regtest node and runs the whole pipeline from the address bridge
+/// through broadcast + confirm, but sources `key_packages`/`group` from the
+/// caller instead of a fresh DKG — so 03-02's persisted-share test can prove the
+/// confirmed key-spend is produced BY the store→load glue over PERSISTED shares
+/// (D-05), and existing fresh-DKG callers delegate here after their own DKG.
+/// Panics on any failure so the caller is a one-line `#[test]`.
+pub fn run_confirmed_key_spend_from_shares(
+    key_packages: BTreeMap<Identifier, KeyPackage>,
+    group: PublicKeyPackage,
+    t: u16,
+) {
     let fx = spawn_regtest();
     let miner = fx.mine(101); // mature a coinbase so the funding wallet has coins
 
-    // 1. In-process DKG (simulate all seats, D-08) → group key (even-Y).
-    let (key_packages, group) = run_inprocess_dkg(t, n).expect("in-process DKG");
-
-    // 2. Bridge to the group's P2TR address and import the watch-only descriptor
+    // 1. Bridge to the group's P2TR address and import the watch-only descriptor
     //    (the descriptor's key is the INTERNAL key P, not the output key Q).
     let addr = address_from_group_key(group.verifying_key(), KnownHrp::Regtest)
         .expect("bridge group key → regtest P2TR address");
@@ -115,7 +136,7 @@ pub fn run_confirmed_key_spend(t: u16, n: u16) {
         .import_tr_descriptor(internal_key)
         .expect("import watch-only tr() descriptor");
 
-    // 3. Fund the group address and confirm it.
+    // 2. Fund the group address and confirm it.
     let funded = Amount::from_btc(1.0).unwrap();
     fx.funding
         .send_to_address(&addr, funded, None, None, None, None, None, None)
@@ -130,7 +151,7 @@ pub fn run_confirmed_key_spend(t: u16, n: u16) {
         .find(|u| u.value == funded)
         .expect("the 1 BTC group UTXO is visible to the watch-only backend");
 
-    // 4. Build the spending PSBT: spend the group UTXO back to the group address
+    // 3. Build the spending PSBT: spend the group UTXO back to the group address
     //    minus a fee. The coordinator distributes the PSBT (never a sighash).
     let fee = Amount::from_sat(10_000);
     let tx = Transaction {
@@ -148,7 +169,7 @@ pub fn run_confirmed_key_spend(t: u16, n: u16) {
     psbt.inputs[0].witness_utxo =
         Some(TxOut { value: utxo.value, script_pubkey: utxo.script_pubkey.clone() });
 
-    // 5. Drive the signing session over the in-memory Transport stub.
+    // 4. Drive the signing session over the in-memory Transport stub.
     let transport = InMemoryTransport::new();
     let mut session = SigningSession::new(
         "e2e-key-spend",
@@ -161,7 +182,7 @@ pub fn run_confirmed_key_spend(t: u16, n: u16) {
     );
     let signed = session.run(true).expect("two-round session → verified key-spend");
 
-    // 6. Broadcast the finalized key-spend and mine it to confirmation.
+    // 5. Broadcast the finalized key-spend and mine it to confirmation.
     let txid = fx.backend.broadcast(&signed).expect("broadcast the key-spend");
     assert_eq!(txid, signed.compute_txid(), "broadcast returns the tx's own id");
     fx.funding.generate_to_address(6, &miner).expect("mine 6 confirmations");
@@ -169,6 +190,6 @@ pub fn run_confirmed_key_spend(t: u16, n: u16) {
     let depth = fx.backend.confirmation_depth(&txid).expect("confirmation depth");
     assert!(
         depth >= 6,
-        "the in-process {t}-of-{n} key-spend must be CONFIRMED on regtest (got depth {depth})"
+        "the {t}-of-N key-spend must be CONFIRMED on regtest (got depth {depth})"
     );
 }
