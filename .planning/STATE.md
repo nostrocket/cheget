@@ -85,7 +85,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [2026-07-16] Run confirmed regtest key-spend from persisted shares (Phase 3 acceptance bar, KEY-06) — needs a host with bitcoind; then `/gsd-verify-work 3`. See `.planning/todos/pending/2026-07-16-run-confirmed-regtest-key-spend-from-persisted-shares.md`
+- [2026-07-16] Verify interactive confirm-twice keygen UX at a terminal — also closes Phase 02 UAT Test 1. See `.planning/todos/pending/2026-07-16-verify-interactive-confirm-twice-keygen-ux.md`
 
 ### Blockers/Concerns
 
